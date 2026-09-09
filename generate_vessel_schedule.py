@@ -45,7 +45,7 @@ FAVICON_PATH = SCRIPT_DIR / "favicon.png"
 # Canonical deployed location, used for absolute og:image / og:url so link
 # previews (LINE, Slack, Facebook, ...) resolve the Heung-A image. Override
 # with --base-url. Must end with a trailing slash.
-SITE_BASE_URL = "https://sirichai1265.github.io/VESSEL-SKED/"
+SITE_BASE_URL = "https://sirichai1265.github.io/heung-a-sked/"
 
 
 def _png_data_uri(path, warn_label):
