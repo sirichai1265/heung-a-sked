@@ -227,6 +227,12 @@
     color:var(--ink-dim);
     margin-top:1px;
   }
+  .v-code{
+    font-family:'IBM Plex Mono', monospace;
+    font-weight:600;
+    letter-spacing:.04em;
+    color:var(--ink);
+  }
 
   .status-pill{
     display:inline-flex;align-items:center;gap:6px;
@@ -460,7 +466,7 @@
   <div class="controls">
     <div class="search-box" id="searchBox">
       <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <input id="searchInput" type="text" placeholder="ค้นหาชื่อเรือ… (เช่น KMTC, SAWASDEE)" autocomplete="off">
+      <input id="searchInput" type="text" placeholder="ค้นหาชื่อเรือ / ตัวย่อ… (เช่น KMTC, KMBK)" autocomplete="off">
       <button class="search-clear" id="searchClear" type="button" aria-label="ล้างคำค้นหา">×</button>
     </div>
     <div class="chip-row" id="statusChips">
@@ -720,8 +726,10 @@ function findLegChange(vesselName, vygBound, pol){
 
 function renderDetailPanel(vesselName){
   const legs = VESSEL_LEGS[vesselName] || [];
+  const code = (VESSELS.find(v=>v.vessel===vesselName)||{}).vesselCode;
+  const nameLabel = code ? `${vesselName} (${code})` : vesselName;
   if(legs.length === 0){
-    return `<div class="detail-panel"><div class="detail-title">Full Schedule — ${vesselName}</div><p style="color:var(--ink-dim);font-family:'IBM Plex Mono',monospace;font-size:12px;">ไม่มีข้อมูลรายละเอียดของเรือลำนี้ในไฟล์</p></div>`;
+    return `<div class="detail-panel"><div class="detail-title">Full Schedule — ${nameLabel}</div><p style="color:var(--ink-dim);font-family:'IBM Plex Mono',monospace;font-size:12px;">ไม่มีข้อมูลรายละเอียดของเรือลำนี้ในไฟล์</p></div>`;
   }
   const rows = legs.map(l=>{
     const etaTime = l.eta ? new Date(l.eta).getTime() : null;
@@ -744,7 +752,7 @@ function renderDetailPanel(vesselName){
   }).join('');
 
   return `<div class="detail-panel">
-    <div class="detail-title">Full Schedule — ${vesselName} (${legs.length} legs)</div>
+    <div class="detail-title">Full Schedule — ${nameLabel} (${legs.length} legs)</div>
     <div class="detail-scroll">
       <table class="leg-table">
         <thead><tr>
@@ -758,7 +766,10 @@ function renderDetailPanel(vesselName){
 
 function render(){
   renderStats();
-  let list = VESSELS.filter(v => v.vessel.toLowerCase().includes(currentQuery.toLowerCase()));
+  let list = VESSELS.filter(v => {
+    const q = currentQuery.toLowerCase();
+    return v.vessel.toLowerCase().includes(q) || (v.vesselCode||'').toLowerCase().includes(q);
+  });
 
   if(currentFilter === 'docked') list = list.filter(v=>v.status==='docked');
   if(currentFilter === 'transit') list = list.filter(v=>v.status==='transit');
@@ -805,7 +816,7 @@ function render(){
           <div class="ship-icon">${ICONS.ship}</div>
           <div>
             <p class="v-name">${v.vessel}${pVyg ? ` <span class="v-name-vyg">${escapeHtml(pVyg)}</span>` : ''}</p>
-            <p class="v-sub">${v.service}${v.opLiner ? ` · Op.${v.opLiner}` : ''}</p>
+            <p class="v-sub">${v.vesselCode ? `<span class="v-code">${escapeHtml(v.vesselCode)}</span> · ` : ''}${v.service}${v.opLiner ? ` · Op.${v.opLiner}` : ''}</p>
           </div>
         </div>
         ${statusPill(v)}
@@ -900,6 +911,7 @@ function buildDashboardFromRows(rows, now){
     const etb = excelDateToJs(r['ETB Date']);
     const etd = excelDateToJs(r['ETD Date']);
     groups[name].push({
+      vesselCode: r['Vessel'] != null ? String(r['Vessel']).trim() : null,
       service: r['Service'] ?? null,
       opLiner: r['Op.Liner'] ?? null,
       vyg: r['Vyg'] != null ? String(r['Vyg']) : null,
@@ -959,6 +971,7 @@ function buildDashboardFromRows(rows, now){
 
     vessels.push({
       vessel: name,
+      vesselCode: g.find(l=>l.vesselCode)?.vesselCode ?? null,
       service: g[0]?.service ?? null,
       opLiner: g[0]?.opLiner ?? null,
       status,

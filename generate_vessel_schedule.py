@@ -122,8 +122,10 @@ def build_vessel_summary(df, now):
         bkk_row = bkk.iloc[0] if len(bkk) else None
         lch_row = lch.iloc[0] if len(lch) else None
 
+        code = g.iloc[0]["Vessel"]
         rows.append({
             "vessel": vessel,
+            "vesselCode": None if pd.isna(code) else str(code).strip(),
             "service": g.iloc[0]["Service"],
             "opLiner": g.iloc[0]["Op.Liner"],
             "status": status,
@@ -255,7 +257,8 @@ def write_excel(vessels, legs, changes, today_name, yesterday_name, outdir):
         else:
             loc, note = "-", "No data in window"
         summary_rows.append({
-            "Vessel Name": v["vessel"], "Service": v["service"], "Op.Liner": v["opLiner"],
+            "Vessel Name": v["vessel"], "Code": v.get("vesselCode"),
+            "Service": v["service"], "Op.Liner": v["opLiner"],
             "Status": v["status"], "Current Location": loc,
             "Vyg Bound": v.get("dockedVygBound"), "Note": note,
             "ETA THBKK": parse_dt(v["bkkEta"]), "Wharf THBKK": v["bkkWharf"],
