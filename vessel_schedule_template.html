@@ -1,0 +1,1066 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<title>Vessel Schedule — THBKK / THLCH</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root{
+    --navy-deep:#0A1929;
+    --navy-panel:#102338;
+    --navy-line:#1C3A54;
+    --paper:#EDE6D6;
+    --paper-dim:#C9C0AA;
+    --ink:#F3EFE4;
+    --ink-dim:#9FB2C4;
+    --amber:#D98E3B;
+    --amber-soft:#3A2E1A;
+    --teal:#4FA39A;
+    --teal-soft:#123230;
+    --slate:#6E8CAE;
+    --slate-soft:#1B2E42;
+    --red-flag:#C15C4A;
+    --early:#4FA39A;
+    --delay:#D98E3B;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--navy-deep);
+    background-image:
+      radial-gradient(circle at 15% 0%, rgba(79,163,154,0.08), transparent 40%),
+      radial-gradient(circle at 85% 10%, rgba(217,142,59,0.06), transparent 45%);
+    color:var(--ink);
+    font-family:'IBM Plex Sans', sans-serif;
+    min-height:100vh;
+    padding:28px 20px 60px;
+  }
+  .wrap{max-width:1100px;margin:0 auto;}
+
+  header{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-end;
+    gap:20px;
+    flex-wrap:wrap;
+    border-bottom:1px solid var(--navy-line);
+    padding-bottom:18px;
+    margin-bottom:22px;
+  }
+  .brand-eyebrow{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;
+    letter-spacing:0.18em;
+    color:var(--amber);
+    text-transform:uppercase;
+    margin:0 0 6px;
+  }
+  h1{
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:700;
+    font-size:28px;
+    margin:0;
+    letter-spacing:-0.01em;
+  }
+  .now-readout{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12px;
+    color:var(--ink-dim);
+    text-align:right;
+    line-height:1.6;
+  }
+  .now-readout b{color:var(--teal);font-weight:600;}
+
+  .controls{
+    display:flex;
+    gap:12px;
+    flex-wrap:wrap;
+    align-items:center;
+    margin-bottom:8px;
+  }
+  .search-box{
+    position:relative;
+    flex:1 1 280px;
+    min-width:220px;
+  }
+  .search-box input{
+    width:100%;
+    background:var(--navy-panel);
+    border:1px solid var(--navy-line);
+    color:var(--ink);
+    font-family:'IBM Plex Mono', monospace;
+    font-size:14px;
+    padding:12px 34px 12px 38px;
+    border-radius:6px;
+    outline:none;
+    transition:border-color .15s;
+  }
+  .search-box input::placeholder{color:var(--ink-dim);}
+  .search-box input:focus{border-color:var(--teal);}
+  .search-box svg{
+    position:absolute;left:12px;top:50%;transform:translateY(-50%);
+    width:15px;height:15px;stroke:var(--ink-dim);
+  }
+  .search-clear{
+    position:absolute;right:10px;top:50%;transform:translateY(-50%);
+    width:20px;height:20px;border:none;background:none;cursor:pointer;
+    color:var(--ink-dim);font-family:'IBM Plex Mono',monospace;font-size:15px;
+    display:none;align-items:center;justify-content:center;
+  }
+  .search-clear:hover{color:var(--ink);}
+  .search-box.has-text .search-clear{display:flex;}
+
+  .chip-row{display:flex;gap:8px;flex-wrap:wrap;}
+  .chip{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11.5px;
+    letter-spacing:0.03em;
+    padding:9px 13px;
+    border-radius:20px;
+    border:1px solid var(--navy-line);
+    background:var(--navy-panel);
+    color:var(--ink-dim);
+    cursor:pointer;
+    white-space:nowrap;
+    transition:all .15s;
+    user-select:none;
+  }
+  .chip:hover{border-color:var(--teal);color:var(--ink);}
+  .chip.active{background:var(--teal-soft);border-color:var(--teal);color:var(--teal);}
+
+  .meta-row{
+    display:flex;justify-content:space-between;align-items:center;
+    margin:18px 0 12px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11.5px;
+    color:var(--ink-dim);
+    letter-spacing:0.03em;
+  }
+  .sort-select{
+    background:transparent;border:none;color:var(--teal);
+    font-family:'IBM Plex Mono', monospace;font-size:11.5px;
+    cursor:pointer;outline:none;
+  }
+  .sort-select option{background:var(--navy-panel);color:var(--ink);}
+
+  .stats-bar{
+    display:grid;
+    grid-template-columns:repeat(4, 1fr);
+    gap:10px;
+    margin-bottom:18px;
+  }
+  .stat-tile{
+    background:var(--navy-panel);
+    border:1px solid var(--navy-line);
+    border-radius:10px;
+    padding:14px 16px;
+    display:flex;
+    align-items:center;
+    gap:12px;
+  }
+  .stat-icon{
+    width:34px;height:34px;flex-shrink:0;border-radius:8px;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .stat-icon svg{width:18px;height:18px;stroke-width:2;fill:none;}
+  .stat-icon.i-total{background:var(--slate-soft);color:var(--slate);}
+  .stat-icon.i-alongside{background:var(--teal-soft);color:var(--teal);}
+  .stat-icon.i-soon{background:var(--amber-soft);color:var(--amber);}
+  .stat-icon.i-changed{background:rgba(193,92,74,0.15);color:var(--red-flag);}
+  .stat-num{font-family:'Space Grotesk', sans-serif;font-weight:700;font-size:22px;color:var(--ink);line-height:1;}
+  .stat-label{font-family:'IBM Plex Sans', sans-serif;font-size:11px;color:var(--ink-dim);margin-top:3px;}
+
+  .grid{display:flex;flex-direction:column;gap:12px;}
+
+  .card{
+    background:var(--navy-panel);
+    border:1px solid var(--navy-line);
+    border-left:4px solid var(--slate);
+    border-radius:12px;
+    padding:18px 20px;
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+    transition:border-color .15s, transform .15s;
+    cursor:pointer;
+  }
+  .card.expanded{border-color:var(--teal);}
+  .card.status-docked{border-left-color:var(--teal);}
+  .card.status-transit{border-left-color:var(--slate);}
+  .card.status-nodata{border-left-color:var(--paper-dim);opacity:.65;}
+  .card.soon{border-left-color:var(--amber);}
+  .card:hover{transform:translateY(-1px);border-color:var(--teal);}
+
+  .card-top{
+    display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;
+  }
+  .card-name-group{display:flex;align-items:center;gap:11px;min-width:0;}
+  .ship-icon{
+    width:36px;height:36px;flex-shrink:0;border-radius:9px;
+    display:flex;align-items:center;justify-content:center;
+    background:var(--navy-deep);border:1px solid var(--navy-line);color:var(--slate);
+  }
+  .ship-icon svg{width:19px;height:19px;stroke-width:1.8;fill:none;}
+  .v-name{
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:600;
+    font-size:17.5px;
+    color:var(--ink);
+    margin:0;
+    line-height:1.25;
+  }
+  .v-sub{
+    font-family:'IBM Plex Sans', sans-serif;
+    font-size:11.5px;
+    color:var(--ink-dim);
+    margin-top:1px;
+  }
+
+  .status-pill{
+    display:inline-flex;align-items:center;gap:6px;
+    font-family:'IBM Plex Sans', sans-serif;
+    font-size:12px;font-weight:600;letter-spacing:0.01em;
+    padding:6px 12px;border-radius:20px;white-space:nowrap;
+  }
+  .status-pill svg{width:13px;height:13px;stroke-width:2.4;fill:none;}
+  .status-pill.docked{background:var(--teal-soft);color:var(--teal);}
+  .status-pill.transit{background:var(--slate-soft);color:var(--slate);}
+  .status-pill.nodata{background:#22242a;color:var(--paper-dim);}
+
+  .position-line{
+    display:flex;align-items:center;gap:8px;
+    font-family:'IBM Plex Sans', sans-serif;font-size:13px;color:var(--ink-dim);
+    line-height:1.5;
+  }
+  .position-line svg{width:14px;height:14px;flex-shrink:0;stroke-width:2;fill:none;color:var(--ink-dim);}
+  .position-line b{color:var(--ink);font-weight:600;}
+  .position-line .mono-val{font-family:'IBM Plex Mono', monospace;font-size:12px;}
+
+  .ports-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .port-tile{
+    background:var(--navy-deep);
+    border:1px solid var(--navy-line);
+    border-radius:9px;
+    padding:11px 13px;
+  }
+  .port-tile.tile-soon{border-color:var(--amber);}
+  .port-tile-label{
+    display:flex;align-items:center;gap:5px;
+    font-family:'IBM Plex Sans', sans-serif;
+    font-size:10.5px;text-transform:uppercase;letter-spacing:0.07em;
+    color:var(--ink-dim);margin-bottom:5px;
+  }
+  .port-tile-label svg{width:11px;height:11px;stroke-width:2.2;fill:none;}
+  .port-tile-eta{
+    font-family:'IBM Plex Mono', monospace;font-size:15px;font-weight:600;color:var(--ink);
+  }
+  .port-tile-eta.na{color:var(--paper-dim);font-weight:400;font-size:13px;}
+  .port-tile-countdown{font-family:'IBM Plex Sans', sans-serif;font-size:11px;margin-top:3px;color:var(--ink-dim);}
+  .port-tile-countdown.soon{color:var(--amber);font-weight:600;}
+  .port-tile-wharf{font-family:'IBM Plex Sans', sans-serif;color:var(--ink-dim);font-size:10.5px;margin-top:5px;opacity:.85;}
+
+  .card-footer{
+    display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;
+    padding-top:10px;border-top:1px dashed var(--navy-line);
+    font-family:'IBM Plex Sans', sans-serif;font-size:11px;color:var(--ink-dim);
+  }
+  .expand-hint{font-size:11px;color:var(--ink-dim);opacity:.8;}
+
+  .detail-panel{
+    background:var(--slate-soft);
+    border:1px solid var(--navy-line);
+    border-top:none;
+    border-radius:0 0 10px 10px;
+    margin-top:-12px;
+    padding:14px 18px 18px;
+    animation:slideDown .15s ease-out;
+  }
+  @keyframes slideDown{from{opacity:0;transform:translateY(-4px);}to{opacity:1;transform:translateY(0);}}
+  .detail-title{
+    font-family:'IBM Plex Mono', monospace;font-size:11px;letter-spacing:0.08em;
+    color:var(--teal);text-transform:uppercase;margin:2px 0 10px;
+  }
+  .detail-scroll{max-height:340px;overflow-y:auto;overflow-x:auto;border-radius:6px;}
+  table.leg-table{width:100%;min-width:640px;border-collapse:collapse;font-family:'IBM Plex Mono', monospace;font-size:11.5px;}
+  table.leg-table th{
+    position:sticky;top:0;background:#16283c;color:var(--ink-dim);
+    text-align:left;padding:7px 10px;font-weight:500;letter-spacing:0.04em;
+    border-bottom:1px solid var(--navy-line);
+  }
+  table.leg-table td{padding:6px 10px;border-bottom:1px solid rgba(255,255,255,0.04);color:var(--ink-dim);}
+  table.leg-table tr.leg-past td{opacity:.4;}
+  table.leg-table tr.leg-current{background:rgba(79,163,154,0.12);}
+  table.leg-table tr.leg-current td{color:var(--ink);}
+  table.leg-table tr.leg-port-hit td{color:var(--amber);}
+  table.leg-table td.mono-strong{color:var(--ink);font-weight:500;}
+
+  .toolbar{
+    display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;
+  }
+  .tool-btn{
+    display:inline-flex;align-items:center;gap:7px;
+    font-family:'IBM Plex Mono', monospace;font-size:11.5px;letter-spacing:0.03em;
+    padding:9px 14px;border-radius:6px;
+    border:1px solid var(--navy-line);background:var(--navy-panel);color:var(--ink-dim);
+    cursor:pointer;transition:all .15s;
+  }
+  .tool-btn:hover{border-color:var(--teal);color:var(--ink);}
+  .tool-btn.primary{border-color:var(--teal);color:var(--teal);}
+  .tool-btn.primary:hover{background:var(--teal-soft);}
+  .tool-btn svg{width:13px;height:13px;stroke:currentColor;flex-shrink:0;}
+  .tool-btn input[type=file]{display:none;}
+  .data-status{
+    font-family:'IBM Plex Mono', monospace;font-size:10.5px;color:var(--ink-dim);
+    display:flex;align-items:center;gap:8px;margin-left:2px;
+  }
+  .data-status.custom{color:var(--amber);}
+  .data-status .reset-link{color:var(--slate);cursor:pointer;text-decoration:underline;}
+  .toast{
+    position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(10px);
+    background:var(--navy-panel);border:1px solid var(--teal);color:var(--ink);
+    font-family:'IBM Plex Mono',monospace;font-size:12px;padding:10px 18px;border-radius:6px;
+    opacity:0;pointer-events:none;transition:all .25s;z-index:50;
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+  .toast.error{border-color:var(--red-flag);color:var(--red-flag);}
+
+  .change-badge{
+    display:inline-flex;align-items:center;gap:4px;
+    font-family:'IBM Plex Mono', monospace;font-size:10.5px;
+    padding:2px 7px;border-radius:4px;white-space:nowrap;
+  }
+  .change-badge.delay{background:var(--amber-soft);color:var(--amber);}
+  .change-badge.early{background:var(--teal-soft);color:var(--teal);}
+  .card-change-line{
+    margin-top:2px;
+    font-family:'IBM Plex Sans', sans-serif;font-size:11.5px;color:var(--ink-dim);
+    display:flex;align-items:center;gap:6px;flex-wrap:wrap;
+  }
+  .leg-delta{margin-left:6px;}
+
+  .empty-state{
+    text-align:center;padding:60px 20px;color:var(--ink-dim);
+    font-family:'IBM Plex Mono', monospace;font-size:13px;
+  }
+
+  footer{
+    margin-top:30px;padding-top:16px;border-top:1px solid var(--navy-line);
+    font-family:'IBM Plex Mono', monospace;font-size:10.5px;color:var(--ink-dim);
+    display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;
+  }
+  .legend{display:flex;gap:16px;flex-wrap:wrap;}
+  .legend span{display:inline-flex;align-items:center;gap:6px;}
+  .dot{width:8px;height:8px;border-radius:2px;display:inline-block;}
+
+  @media (max-width:760px){
+    .stats-bar{grid-template-columns:repeat(2, 1fr);}
+    .ports-row{grid-template-columns:1fr;}
+    header{flex-direction:column;align-items:flex-start;}
+    .now-readout{text-align:left;}
+  }
+
+  .preview-switch{
+    max-width:1100px;margin:0 auto 16px;
+    display:flex;justify-content:flex-end;gap:6px;
+  }
+  .preview-btn{
+    display:inline-flex;align-items:center;gap:6px;
+    font-family:'IBM Plex Mono', monospace;font-size:11.5px;letter-spacing:0.03em;
+    padding:8px 13px;border-radius:6px;
+    border:1px solid var(--navy-line);background:var(--navy-panel);color:var(--ink-dim);
+    cursor:pointer;transition:all .15s;
+  }
+  .preview-btn svg{width:14px;height:14px;stroke-width:2;fill:none;}
+  .preview-btn:hover{border-color:var(--teal);color:var(--ink);}
+  .preview-btn.active{background:var(--teal-soft);border-color:var(--teal);color:var(--teal);}
+
+  .phone-shell{
+    display:none;
+    justify-content:center;
+    padding:10px 0 40px;
+  }
+  .phone-shell.active{display:flex;}
+  .phone-frame{
+    width:390px;
+    max-width:92vw;
+    height:800px;
+    background:#000;
+    border-radius:38px;
+    padding:12px;
+    box-shadow:0 20px 60px rgba(0,0,0,0.5), 0 0 0 1px var(--navy-line);
+  }
+  .phone-frame .notch{
+    width:120px;height:22px;background:#000;border-radius:0 0 14px 14px;
+    margin:0 auto;position:relative;top:12px;z-index:2;
+  }
+  .phone-frame iframe{
+    width:100%;height:100%;border:none;border-radius:26px;background:var(--navy-deep);
+    display:block;
+  }
+  .wrap.hidden{display:none;}
+</style>
+</head>
+<body>
+<div class="preview-switch">
+  <button class="preview-btn active" id="btnDesktop" type="button">
+    <svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></svg>
+    Desktop
+  </button>
+  <button class="preview-btn" id="btnMobile" type="button">
+    <svg viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg>
+    Mobile
+  </button>
+</div>
+<div class="phone-shell" id="phoneShell">
+  <div class="phone-frame">
+    <div class="notch"></div>
+    <iframe id="mobileFrame"></iframe>
+  </div>
+</div>
+<div class="wrap" id="mainWrap">
+
+  <header>
+    <div>
+      <p class="brand-eyebrow">Terminal Ops · Rotation Sked</p>
+      <h1>Vessel Schedule</h1>
+    </div>
+    <div class="now-readout">
+      REF TIME (จากไฟล์) <b id="nowReadout">—</b><br>
+      TRACKING <span id="vesselCount">0</span> VESSELS
+    </div>
+  </header>
+
+  <div class="stats-bar" id="statsBar"></div>
+
+  <div class="toolbar">
+    <label class="tool-btn primary" for="fileInput">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      อัปโหลดตารางเรือใหม่ (.xls/.xlsx)
+      <input type="file" id="fileInput" accept=".xls,.xlsx">
+    </label>
+    <button class="tool-btn" id="exportBtn" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Export ผลลัพธ์ที่แสดง (.xlsx)
+    </button>
+    <div class="data-status" id="dataStatus"></div>
+  </div>
+
+  <div class="controls">
+    <div class="search-box" id="searchBox">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input id="searchInput" type="text" placeholder="ค้นหาชื่อเรือ… (เช่น KMTC, SAWASDEE)" autocomplete="off">
+      <button class="search-clear" id="searchClear" type="button" aria-label="ล้างคำค้นหา">×</button>
+    </div>
+    <div class="chip-row" id="statusChips">
+      <div class="chip active" data-filter="all">ALL</div>
+      <div class="chip" data-filter="docked">ALONGSIDE</div>
+      <div class="chip" data-filter="transit">IN TRANSIT</div>
+      <div class="chip" data-filter="bkk">→ THBKK</div>
+      <div class="chip" data-filter="lch">→ THLCH</div>
+      <div class="chip" data-filter="changed">⚠ EARLY/DELAY</div>
+    </div>
+  </div>
+
+  <div class="meta-row">
+    <span id="resultCount">31 vessels</span>
+    <span>SORT
+      <select class="sort-select" id="sortSelect">
+        <option value="date" selected>วัน/เดือน (เร็วสุดก่อน)</option>
+        <option value="name">A–Z</option>
+        <option value="bkk">Soonest → THBKK</option>
+        <option value="lch">Soonest → THLCH</option>
+      </select>
+    </span>
+  </div>
+
+  <div class="grid" id="cardGrid"></div>
+  <div class="empty-state" id="emptyState" style="display:none;">ไม่พบเรือที่ตรงกับคำค้นหา</div>
+
+  <footer>
+    <div class="legend">
+      <span><i class="dot" style="background:var(--teal)"></i>Alongside</span>
+      <span><i class="dot" style="background:var(--slate)"></i>In transit</span>
+      <span><i class="dot" style="background:var(--amber)"></i>Arriving &lt; 48h</span>
+      <span><i class="dot" style="background:var(--paper-dim)"></i>No data in window</span>
+      <span><i class="dot" style="background:var(--amber)"></i>▲ Delay vs prev sked</span>
+      <span><i class="dot" style="background:var(--teal)"></i>▼ Early vs prev sked</span>
+    </div>
+    <div>Source: __SOURCE_LABEL__ · Wharf.xls</div>
+  </footer>
+
+</div>
+
+<script>
+const DEFAULT_NOW = new Date("__NOW_ISO__");
+const SCHEDULE_CHANGES = __SCHEDULE_CHANGES_JSON__;
+const DEFAULT_LEGS = __LEGS_JSON__;
+const DEFAULT_VESSELS = __VESSELS_JSON__
+;
+
+let NOW = DEFAULT_NOW;
+let VESSELS = DEFAULT_VESSELS;
+let VESSEL_LEGS = DEFAULT_LEGS;
+const WHARF_LOOKUP = __WHARF_LOOKUP_JSON__;
+
+function fmtDate(iso){
+  if(!iso) return null;
+  const d = new Date(iso);
+  const months=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const hh=String(d.getHours()).padStart(2,'0');
+  const mm=String(d.getMinutes()).padStart(2,'0');
+  return `${d.getDate()} ${months[d.getMonth()]} ${hh}:${mm}`;
+}
+function hoursUntil(iso){
+  if(!iso) return null;
+  return (new Date(iso) - NOW) / 36e5;
+}
+function fmtCountdown(hrs){
+  if(hrs===null) return '';
+  if(hrs < 0) return '';
+  if(hrs < 48){
+    const h = Math.round(hrs);
+    return h<=0 ? 'ภายในไม่กี่นาที' : `อีก ~${h} ชม.`;
+  }
+  const d = Math.round(hrs/24);
+  return `อีก ~${d} วัน`;
+}
+
+function nextChangeForVessel(vesselName){
+  const list = SCHEDULE_CHANGES[vesselName];
+  if(!list) return null;
+  for(const c of list){
+    if(new Date(c.newEta).getTime() > NOW.getTime()) return c;
+  }
+  return null;
+}
+
+function changeCountForVessel(vesselName){
+  const list = SCHEDULE_CHANGES[vesselName];
+  if(!list) return 0;
+  return list.filter(c => new Date(c.newEta).getTime() > NOW.getTime()).length;
+}
+
+function fmtDeltaBadge(deltaHours){
+  const isDelay = deltaHours > 0;
+  const cls = isDelay ? 'delay' : 'early';
+  const symbol = isDelay ? '▲' : '▼';
+  const abs = Math.abs(deltaHours);
+  const label = abs < 24 ? `${abs}ชม.` : `${(abs/24).toFixed(1)}วัน`;
+  return `<span class="change-badge ${cls}">${symbol} ${isDelay?'delay':'early'} ${label}</span>`;
+}
+
+const ICONS = {
+  ship: `<svg viewBox="0 0 24 24"><path d="M2 21c1.5 1 3.5 1 5 0s3.5-1 5 0 3.5 1 5 0 3.5-1 5 0"/><path d="M4 18l1-9h14l1 9"/><path d="M12 3v6"/><path d="M9 6h6"/></svg>`,
+  anchor: `<svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="2"/><path d="M12 7v14"/><path d="M5 12H2a10 10 0 0 0 20 0h-3"/></svg>`,
+  transit: `<svg viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg>`,
+  question: `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 1.5-2 2-2 3.5"/><path d="M12 17h.01"/></svg>`,
+  pin: `<svg viewBox="0 0 24 24"><path d="M12 21s7-6.5 7-12a7 7 0 0 0-14 0c0 5.5 7 12 7 12z"/><circle cx="12" cy="9" r="2.5"/></svg>`,
+  clock: `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>`,
+  alert: `<svg viewBox="0 0 24 24"><path d="M12 3l10 18H2z"/><path d="M12 10v4"/><path d="M12 17h.01"/></svg>`,
+};
+
+function cardChangeLine(v){
+  const next = nextChangeForVessel(v.vessel);
+  if(!next) return '';
+  const count = changeCountForVessel(v.vessel);
+  const more = count > 1 ? ` (+${count-1} legs อื่น)` : '';
+  return `<div class="card-change-line">${fmtDeltaBadge(next.deltaHours)} ที่ <b style="color:var(--ink)">${next.pol}</b> เทียบกับตารางก่อนหน้า (ETA เดิม ${fmtDate(next.oldEta)})${more}</div>`;
+}
+
+function statusPill(v){
+  if(v.status === 'docked') return `<div class="status-pill docked">${ICONS.anchor} Alongside</div>`;
+  if(v.status === 'transit') return `<div class="status-pill transit">${ICONS.transit} In transit</div>`;
+  return `<div class="status-pill nodata">${ICONS.question} No data</div>`;
+}
+
+function positionLine(v){
+  if(v.status === 'docked'){
+    const wInfo = wharfInfo(v.dockedWharf);
+    return `<div class="position-line">${ICONS.pin}
+      <span>อยู่ที่ <b>${v.dockedLoc}</b> <span class="mono-val">(${v.dockedWharf||'-'})</span>${wInfo ? ` — ${escapeHtml(wInfo)}` : ''} · ออกไป <b>${v.dockedNextDest||'-'}</b> ~<span class="mono-val">${fmtDate(v.dockedUntil)}</span></span>
+    </div>`;
+  }
+  if(v.status === 'transit'){
+    const eta = v.transitEta ? ` · คาดถึง <span class="mono-val">${fmtDate(v.transitEta)}</span>` : '';
+    return `<div class="position-line">${ICONS.transit}
+      <span><b>${v.transitFrom||'?'}</b> → <b>${v.transitTo||'?'}</b>${eta}</span>
+    </div>`;
+  }
+  return `<div class="position-line">${ICONS.question} <span>ไม่มีข้อมูลย้อนหลังในไฟล์นี้</span></div>`;
+}
+
+function portTile(eta, wharf, label, currentCall){
+  if(currentCall){
+    const wInfo = wharfInfo(currentCall.wharf);
+    const hrs = hoursUntil(currentCall.until);
+    const soon = hrs !== null && hrs < 48 && hrs >= 0;
+    return `<div class="port-tile tile-soon">
+      <div class="port-tile-label">${ICONS.pin}${label} <span style="color:var(--teal);margin-left:4px">● NOW</span></div>
+      <div class="port-tile-eta">Alongside</div>
+      <div class="port-tile-countdown ${soon?'soon':''}">ออกไป ${currentCall.nextDest||'-'} ~${fmtDate(currentCall.until)} (${fmtCountdown(hrs)})</div>
+      <div class="port-tile-wharf" title="${escapeHtml(wInfo)}">Wharf ${currentCall.wharf||'-'}${wInfo ? ` · ${escapeHtml(wInfo)}` : ''}</div>
+    </div>`;
+  }
+  if(!eta){
+    return `<div class="port-tile">
+      <div class="port-tile-label">${ICONS.pin}${label}</div>
+      <div class="port-tile-eta na">— ไม่พบกำหนดการ</div>
+    </div>`;
+  }
+  const hrs = hoursUntil(eta);
+  const soon = hrs !== null && hrs < 48 && hrs >= 0;
+  const wInfo = wharfInfo(wharf);
+  return `<div class="port-tile ${soon?'tile-soon':''}">
+    <div class="port-tile-label">${ICONS.pin}${label}</div>
+    <div class="port-tile-eta">${fmtDate(eta)}</div>
+    <div class="port-tile-countdown ${soon?'soon':''}">${fmtCountdown(hrs)}</div>
+    <div class="port-tile-wharf" title="${escapeHtml(wInfo)}">Wharf ${wharf||'-'}${wInfo ? ` · ${escapeHtml(wInfo)}` : ''}</div>
+  </div>`;
+}
+
+function isSoon(v){
+  const b = hoursUntil(v.bkkEta), l = hoursUntil(v.lchEta);
+  return (b!==null && b<48 && b>=0) || (l!==null && l<48 && l>=0);
+}
+
+function renderStats(){
+  const total = VESSELS.length;
+  const alongside = VESSELS.filter(v=>v.status==='docked').length;
+  const soon = VESSELS.filter(v=>isSoon(v)).length;
+  const changed = VESSELS.filter(v=>nextChangeForVessel(v.vessel)).length;
+  const tiles = [
+    {icon:ICONS.ship, cls:'i-total', num:total, label:'เรือที่ติดตามทั้งหมด'},
+    {icon:ICONS.anchor, cls:'i-alongside', num:alongside, label:'กำลัง Alongside'},
+    {icon:ICONS.clock, cls:'i-soon', num:soon, label:'ถึงท่าใน 48 ชม.'},
+    {icon:ICONS.alert, cls:'i-changed', num:changed, label:'ตารางเปลี่ยนจากเมื่อวาน'},
+  ];
+  document.getElementById('statsBar').innerHTML = tiles.map(t=>`
+    <div class="stat-tile">
+      <div class="stat-icon ${t.cls}">${t.icon}</div>
+      <div><div class="stat-num">${t.num}</div><div class="stat-label">${t.label}</div></div>
+    </div>
+  `).join('');
+}
+
+let currentFilter = 'all';
+let currentQuery = '';
+let currentSort = 'date';
+let expandedVessel = null;
+let lastRenderedList = [];
+
+function earliestPortDate(v){
+  const dates = [v.bkkEta, v.lchEta].filter(Boolean).map(d=>new Date(d).getTime());
+  return dates.length ? Math.min(...dates) : Infinity;
+}
+
+function fmtDateShort(iso){
+  if(!iso) return '—';
+  const d = new Date(iso);
+  const months=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const hh=String(d.getHours()).padStart(2,'0');
+  const mm=String(d.getMinutes()).padStart(2,'0');
+  return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()+543-2500} · ${hh}:${mm}`;
+}
+
+function escapeHtml(s){
+  if(s == null) return '';
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function wharfInfo(code){
+  if(!code) return null;
+  const w = WHARF_LOOKUP[code];
+  if(!w) return null;
+  const parts = [w.name, w.area].filter(Boolean);
+  return parts.length ? parts.join(' — ') : (w.country || null);
+}
+function wharfLabel(code){
+  const info = wharfInfo(code);
+  return info ? `${code} (${info})` : (code || '-');
+}
+
+function findLegChange(vesselName, vygBound, pol){
+  const list = SCHEDULE_CHANGES[vesselName];
+  if(!list) return null;
+  return list.find(c => c.vygBound === vygBound && c.pol === pol) || null;
+}
+
+function renderDetailPanel(vesselName){
+  const legs = VESSEL_LEGS[vesselName] || [];
+  if(legs.length === 0){
+    return `<div class="detail-panel"><div class="detail-title">Full Schedule — ${vesselName}</div><p style="color:var(--ink-dim);font-family:'IBM Plex Mono',monospace;font-size:12px;">ไม่มีข้อมูลรายละเอียดของเรือลำนี้ในไฟล์</p></div>`;
+  }
+  const rows = legs.map(l=>{
+    const etaTime = l.eta ? new Date(l.eta).getTime() : null;
+    const etdTime = l.etd ? new Date(l.etd).getTime() : null;
+    const isPast = etdTime !== null && etdTime < NOW.getTime();
+    const isCurrent = etaTime !== null && etdTime !== null && etaTime <= NOW.getTime() && etdTime >= NOW.getTime();
+    const isPortHit = l.pol === 'THBKK' || l.pol === 'THLCH';
+    const cls = [isPast?'leg-past':'', isCurrent?'leg-current':'', (!isPast && !isCurrent && isPortHit)?'leg-port-hit':''].filter(Boolean).join(' ');
+    const change = findLegChange(vesselName, l.vygBound, l.pol);
+    const deltaHtml = change ? fmtDeltaBadge(change.deltaHours) : '';
+    return `<tr class="${cls}">
+      <td class="mono-strong">${l.service||'-'}</td>
+      <td>${l.vygBound||'-'}</td>
+      <td title="${escapeHtml(wharfInfo(l.wharf))}">${l.wharf||'-'}${wharfInfo(l.wharf) ? `<br><span style="font-size:9.5px;opacity:.7">${escapeHtml(wharfInfo(l.wharf))}</span>` : ''}</td>
+      <td class="mono-strong">${l.pol||'-'} → ${l.pod||'-'}</td>
+      <td>${fmtDateShort(l.eta)}<span class="leg-delta">${deltaHtml}</span></td>
+      <td>${fmtDateShort(l.etd)}</td>
+      <td>${isCurrent?'● อยู่ที่นี่ตอนนี้':(isPast?'ผ่านแล้ว':'')}</td>
+    </tr>`;
+  }).join('');
+
+  return `<div class="detail-panel">
+    <div class="detail-title">Full Schedule — ${vesselName} (${legs.length} legs)</div>
+    <div class="detail-scroll">
+      <table class="leg-table">
+        <thead><tr>
+          <th>Service</th><th>Voyage</th><th>Wharf</th><th>Route (POL → POD)</th><th>ETA</th><th>ETD</th><th>Note</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+function render(){
+  renderStats();
+  let list = VESSELS.filter(v => v.vessel.toLowerCase().includes(currentQuery.toLowerCase()));
+
+  if(currentFilter === 'docked') list = list.filter(v=>v.status==='docked');
+  if(currentFilter === 'transit') list = list.filter(v=>v.status==='transit');
+  if(currentFilter === 'bkk') list = list.filter(v=>v.bkkEta);
+  if(currentFilter === 'lch') list = list.filter(v=>v.lchEta);
+  if(currentFilter === 'changed') list = list.filter(v=>nextChangeForVessel(v.vessel));
+
+  if(currentSort === 'bkk'){
+    list = list.filter(v=>v.bkkEta).sort((a,b)=> new Date(a.bkkEta)-new Date(b.bkkEta))
+      .concat(list.filter(v=>!v.bkkEta));
+  } else if(currentSort === 'lch'){
+    list = list.filter(v=>v.lchEta).sort((a,b)=> new Date(a.lchEta)-new Date(b.lchEta))
+      .concat(list.filter(v=>!v.lchEta));
+  } else if(currentSort === 'date'){
+    list = list.slice().sort((a,b)=> earliestPortDate(a) - earliestPortDate(b));
+  } else {
+    list = list.slice().sort((a,b)=> a.vessel.localeCompare(b.vessel));
+  }
+
+  document.getElementById('resultCount').textContent = `${list.length} vessels`;
+  document.getElementById('vesselCount').textContent = VESSELS.length;
+  lastRenderedList = list;
+
+  if(currentQuery.trim() && list.length === 1){
+    expandedVessel = list[0].vessel;
+  }
+
+  const grid = document.getElementById('cardGrid');
+  const empty = document.getElementById('emptyState');
+
+  if(list.length === 0){
+    grid.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  grid.innerHTML = list.map(v => `
+    <div class="card status-${v.status} ${isSoon(v)?'soon':''} ${expandedVessel===v.vessel?'expanded':''}" data-vessel="${v.vessel.replace(/"/g,'&quot;')}">
+      <div class="card-top">
+        <div class="card-name-group">
+          <div class="ship-icon">${ICONS.ship}</div>
+          <div>
+            <p class="v-name">${v.vessel}</p>
+            <p class="v-sub">${v.service}${v.opLiner ? ` · Op.${v.opLiner}` : ''}</p>
+          </div>
+        </div>
+        ${statusPill(v)}
+      </div>
+      ${positionLine(v)}
+      <div class="ports-row">
+        ${portTile(v.bkkEta, v.bkkWharf, 'ETA → THBKK', (v.status==='docked' && v.dockedLoc==='THBKK') ? {wharf:v.dockedWharf, until:v.dockedUntil, nextDest:v.dockedNextDest} : null)}
+        ${portTile(v.lchEta, v.lchWharf, 'ETA → THLCH', (v.status==='docked' && v.dockedLoc==='THLCH') ? {wharf:v.dockedWharf, until:v.dockedUntil, nextDest:v.dockedNextDest} : null)}
+      </div>
+      ${cardChangeLine(v)}
+      <div class="card-footer">
+        <span class="expand-hint">${expandedVessel===v.vessel ? '▲ ซ่อนตารางเดินเรือทั้งหมด' : '▼ คลิกเพื่อดูตารางเดินเรือทั้งหมด'}</span>
+      </div>
+    </div>
+    ${expandedVessel===v.vessel ? renderDetailPanel(v.vessel) : ''}
+  `).join('');
+
+  grid.querySelectorAll('.card').forEach(card=>{
+    card.addEventListener('click', ()=>{
+      const name = card.dataset.vessel;
+      expandedVessel = (expandedVessel === name) ? null : name;
+      render();
+      if(expandedVessel){
+        setTimeout(()=>{
+          const el = grid.querySelector(`.card.expanded`);
+          if(el) el.scrollIntoView({behavior:'smooth', block:'nearest'});
+        }, 30);
+      }
+    });
+  });
+}
+
+document.getElementById('searchInput').addEventListener('input', e=>{
+  currentQuery = e.target.value;
+  document.getElementById('searchBox').classList.toggle('has-text', currentQuery.length>0);
+  if(currentQuery.trim()===''){ expandedVessel = null; }
+  render();
+});
+document.getElementById('searchClear').addEventListener('click', ()=>{
+  const input = document.getElementById('searchInput');
+  input.value = '';
+  currentQuery = '';
+  expandedVessel = null;
+  document.getElementById('searchBox').classList.remove('has-text');
+  input.focus();
+  render();
+});
+document.getElementById('sortSelect').addEventListener('change', e=>{
+  currentSort = e.target.value;
+  render();
+});
+document.querySelectorAll('.chip').forEach(chip=>{
+  chip.addEventListener('click', ()=>{
+    document.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));
+    chip.classList.add('active');
+    currentFilter = chip.dataset.filter;
+    render();
+  });
+});
+
+// ---------- Upload & Rebuild ----------
+function toast(msg, isError){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.toggle('error', !!isError);
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 3200);
+}
+
+function excelDateToJs(val){
+  if(val instanceof Date) return val;
+  if(typeof val === 'number'){
+    // Excel serial date (days since 1899-12-30)
+    return new Date(Math.round((val - 25569) * 86400 * 1000));
+  }
+  if(typeof val === 'string' && val.trim()){
+    const d = new Date(val);
+    if(!isNaN(d)) return d;
+  }
+  return null;
+}
+
+function buildDashboardFromRows(rows, now){
+  // group by Vessel Name
+  const groups = {};
+  rows.forEach(r=>{
+    const name = (r['Vessel Name'] || '').toString().trim();
+    if(!name || name === 'TO BE NOMINATED') return;
+    if(!groups[name]) groups[name] = [];
+    const eta = excelDateToJs(r['ETA Date']);
+    const etb = excelDateToJs(r['ETB Date']);
+    const etd = excelDateToJs(r['ETD Date']);
+    groups[name].push({
+      service: r['Service'] ?? null,
+      opLiner: r['Op.Liner'] ?? null,
+      vyg: r['Vyg'] != null ? String(r['Vyg']) : null,
+      bound: r['Bound'] ?? null,
+      vygBound: r['Vyg Bound'] ?? null,
+      wharf: r['Wharf'] ?? null,
+      pol: r['POL'] ?? null,
+      pod: r['POD'] ?? null,
+      eta, etb, etd
+    });
+  });
+
+  const vessels = [];
+  const legs = {};
+  Object.keys(groups).sort().forEach(name=>{
+    const g = groups[name].slice().sort((a,b)=> (a.eta?.getTime()||0) - (b.eta?.getTime()||0));
+    legs[name] = g.map(l=>({
+      service: l.service, vyg: l.vyg, bound: l.bound, vygBound: l.vygBound,
+      wharf: l.wharf, pol: l.pol, pod: l.pod,
+      eta: l.eta ? l.eta.toISOString() : null,
+      etb: l.etb ? l.etb.toISOString() : null,
+      etd: l.etd ? l.etd.toISOString() : null,
+    }));
+
+    const docked = g.filter(l=> l.eta && l.etd && l.eta <= now && l.etd >= now);
+    let status='unknown', dockedLoc=null, dockedWharf=null, dockedSince=null, dockedUntil=null, dockedNextDest=null;
+    let transitFrom=null, transitTo=null, transitEta=null;
+
+    if(docked.length){
+      const d = docked[docked.length-1];
+      status='docked'; dockedLoc=d.pol; dockedWharf=d.wharf;
+      dockedSince=d.eta ? d.eta.toISOString() : null;
+      dockedUntil=d.etd ? d.etd.toISOString() : null;
+      dockedNextDest=d.pod;
+    } else {
+      const past = g.filter(l=> l.etd && l.etd <= now);
+      const fut = g.filter(l=> l.eta && l.eta >= now);
+      if(past.length && fut.length){
+        status='transit';
+        transitFrom = past[past.length-1].pol;
+        transitTo = fut[0].pol;
+        transitEta = fut[0].eta ? fut[0].eta.toISOString() : null;
+      } else if(past.length){
+        status='transit';
+        transitFrom = past[past.length-1].pol;
+        transitTo = past[past.length-1].pod;
+      } else {
+        status='nodata';
+      }
+    }
+
+    const fut2 = g.filter(l=> l.eta && l.eta > now);
+    const bkk = fut2.filter(l=> l.pol === 'THBKK').sort((a,b)=>a.eta-b.eta);
+    const lch = fut2.filter(l=> l.pol === 'THLCH').sort((a,b)=>a.eta-b.eta);
+
+    vessels.push({
+      vessel: name,
+      service: g[0]?.service ?? null,
+      opLiner: g[0]?.opLiner ?? null,
+      status,
+      dockedLoc, dockedWharf, dockedSince, dockedUntil, dockedNextDest,
+      transitFrom, transitTo, transitEta,
+      bkkEta: bkk[0]?.eta ? bkk[0].eta.toISOString() : null,
+      bkkWharf: bkk[0]?.wharf ?? null,
+      lchEta: lch[0]?.eta ? lch[0].eta.toISOString() : null,
+      lchWharf: lch[0]?.wharf ?? null,
+    });
+  });
+
+  return { vessels, legs };
+}
+
+document.getElementById('fileInput').addEventListener('change', async (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  try{
+    const buf = await file.arrayBuffer();
+    const wb = XLSX.read(buf, {type:'array', cellDates:true});
+    const sheetName = wb.SheetNames[0];
+    const sheet = wb.Sheets[sheetName];
+    const rows = XLSX.utils.sheet_to_json(sheet, {defval:null});
+    if(!rows.length || !('Vessel Name' in rows[0])){
+      toast('ไฟล์นี้ไม่มีคอลัมน์ "Vessel Name" ที่คาดไว้ ลองตรวจสอบรูปแบบไฟล์', true);
+      e.target.value = '';
+      return;
+    }
+    const newNow = new Date();
+    const built = buildDashboardFromRows(rows, newNow);
+    if(!built.vessels.length){
+      toast('ไม่พบข้อมูลเรือในไฟล์นี้', true);
+      e.target.value = '';
+      return;
+    }
+    NOW = newNow;
+    VESSELS = built.vessels;
+    VESSEL_LEGS = built.legs;
+    expandedVessel = null;
+    currentQuery = '';
+    document.getElementById('searchInput').value = '';
+    document.getElementById('searchBox').classList.remove('has-text');
+    updateHeader(file.name);
+    render();
+    toast(`โหลดข้อมูลใหม่แล้ว: ${built.vessels.length} ลำ จาก ${file.name}`);
+  } catch(err){
+    console.error(err);
+    toast('อ่านไฟล์ไม่สำเร็จ — ตรวจสอบว่าเป็นไฟล์ .xls หรือ .xlsx ที่ถูกต้อง', true);
+  }
+  e.target.value = '';
+});
+
+document.getElementById('exportBtn').addEventListener('click', ()=>{
+  if(!lastRenderedList || !lastRenderedList.length){
+    toast('ไม่มีข้อมูลให้ export ในตอนนี้', true);
+    return;
+  }
+  const rows = lastRenderedList.map(v=>({
+    'Vessel Name': v.vessel,
+    'Status': v.status,
+    'Current Location': v.status==='docked' ? v.dockedLoc : (v.status==='transit' ? `${v.transitFrom||''} -> ${v.transitTo||''}` : ''),
+    'ETA THBKK': v.bkkEta ? fmtDateShort(v.bkkEta) : '',
+    'Wharf THBKK': v.bkkWharf || '',
+    'Wharf THBKK Name': wharfInfo(v.bkkWharf) || '',
+    'ETA THLCH': v.lchEta ? fmtDateShort(v.lchEta) : '',
+    'Wharf THLCH': v.lchWharf || '',
+    'Wharf THLCH Name': wharfInfo(v.lchWharf) || '',
+  }));
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Vessel Schedule');
+  XLSX.writeFile(wb, 'vessel_planner_export.xlsx');
+  toast(`Export แล้ว ${rows.length} รายการ`);
+});
+
+function updateHeader(sourceName){
+  document.getElementById('nowReadout').textContent = fmtDate(NOW.toISOString());
+  const statusEl = document.getElementById('dataStatus');
+  if(sourceName){
+    statusEl.innerHTML = `แหล่งข้อมูล: <b style="color:var(--amber)">${sourceName}</b> · <span class="reset-link" id="resetLink">ใช้ข้อมูลเริ่มต้น</span>`;
+    statusEl.classList.add('custom');
+    document.getElementById('resetLink').addEventListener('click', ()=>{
+      NOW = DEFAULT_NOW; VESSELS = DEFAULT_VESSELS; VESSEL_LEGS = DEFAULT_LEGS;
+      expandedVessel = null;
+      updateHeader(null);
+      render();
+      toast('กลับไปใช้ข้อมูลเริ่มต้น (__SOURCE_FILENAME__) แล้ว');
+    });
+  } else {
+    statusEl.innerHTML = 'แหล่งข้อมูล: __SOURCE_FILENAME__ (ค่าเริ่มต้น)';
+    statusEl.classList.remove('custom');
+  }
+}
+
+const btnDesktop = document.getElementById('btnDesktop');
+const btnMobile = document.getElementById('btnMobile');
+const phoneShell = document.getElementById('phoneShell');
+const mainWrap = document.getElementById('mainWrap');
+const mobileFrame = document.getElementById('mobileFrame');
+
+function buildMobileDoc(){
+  const clone = document.documentElement.cloneNode(true);
+  const ps = clone.querySelector('.preview-switch');
+  if(ps) ps.remove();
+  const shell = clone.querySelector('#phoneShell');
+  if(shell) shell.remove();
+  const wrap = clone.querySelector('#mainWrap');
+  if(wrap) wrap.classList.remove('hidden');
+  return '<!DOCTYPE html>\n' + clone.outerHTML;
+}
+
+if(btnDesktop && btnMobile && phoneShell && mainWrap && mobileFrame){
+  btnDesktop.addEventListener('click', ()=>{
+    btnDesktop.classList.add('active');
+    btnMobile.classList.remove('active');
+    phoneShell.classList.remove('active');
+    mainWrap.classList.remove('hidden');
+  });
+  btnMobile.addEventListener('click', ()=>{
+    btnMobile.classList.add('active');
+    btnDesktop.classList.remove('active');
+    mainWrap.classList.add('hidden');
+    phoneShell.classList.add('active');
+    if(!mobileFrame.dataset.loaded){
+      mobileFrame.srcdoc = buildMobileDoc();
+      mobileFrame.dataset.loaded = '1';
+    }
+  });
+}
+
+updateHeader(null);
+render();
+</script>
+</body>
+</html>
