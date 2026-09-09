@@ -46,23 +46,24 @@
   }
   .wrap{max-width:1120px;margin:0 auto;}
 
-  .brand-logo-wrap{
+  .brand-block{
     display:flex;
-    justify-content:center;
-    margin-bottom:18px;
+    align-items:center;
+    gap:18px;
   }
   .brand-logo{
     height:88px;
     width:auto;
     max-width:100%;
     object-fit:contain;
+    flex-shrink:0;
   }
   .brand-logo[src=""],.brand-logo:not([src]){display:none;}
 
   header{
     display:flex;
     justify-content:space-between;
-    align-items:flex-end;
+    align-items:center;
     gap:20px;
     flex-wrap:wrap;
     border-bottom:1px solid var(--navy-line);
@@ -477,14 +478,13 @@
 </div>
 <div class="wrap" id="mainWrap">
 
-  <div class="brand-logo-wrap">
-    <img class="brand-logo" src="__LOGO_DATA_URI__" alt="Heung-A Line">
-  </div>
-
   <header>
-    <div>
-      <p class="brand-eyebrow">Terminal Ops · Rotation Sked</p>
-      <h1>Vessel Schedule</h1>
+    <div class="brand-block">
+      <img class="brand-logo" src="__LOGO_DATA_URI__" alt="Heung-A Line">
+      <div>
+        <p class="brand-eyebrow">Terminal Ops · Rotation Sked</p>
+        <h1>Vessel Schedule</h1>
+      </div>
     </div>
     <div class="now-readout">
       REF TIME (จากไฟล์) <b id="nowReadout">—</b><br>
