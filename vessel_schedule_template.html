@@ -364,9 +364,62 @@
     .now-readout{text-align:left;}
   }
 
+  .preview-switch{
+    max-width:1100px;margin:0 auto 16px;
+    display:flex;justify-content:flex-end;gap:6px;
+  }
+  .preview-btn{
+    display:inline-flex;align-items:center;gap:6px;
+    font-family:'IBM Plex Mono', monospace;font-size:11.5px;letter-spacing:0.03em;
+    padding:8px 13px;border-radius:6px;
+    border:1px solid var(--navy-line);background:var(--navy-panel);color:var(--ink-dim);
+    cursor:pointer;transition:all .15s;
+  }
+  .preview-btn svg{width:14px;height:14px;stroke-width:2;fill:none;}
+  .preview-btn:hover{border-color:var(--teal);color:var(--ink);}
+  .preview-btn.active{background:var(--teal-soft);border-color:var(--teal);color:var(--teal);}
+
+  .phone-shell{
+    display:none;
+    justify-content:center;
+    padding:4px 0 40px;
+  }
+  .phone-shell.active{display:flex;}
+  .phone-frame{
+    width:400px;
+    max-width:94vw;
+    height:calc(100vh - 110px);
+    min-height:600px;
+    background:var(--navy-deep);
+    border:1px solid var(--navy-line);
+    border-radius:10px;
+    overflow:hidden;
+    box-shadow:0 8px 30px rgba(0,0,0,0.28);
+  }
+  .phone-frame iframe{
+    width:100%;height:100%;border:none;background:var(--navy-deep);
+    display:block;
+  }
+  .wrap.hidden{display:none;}
+
 </style>
 </head>
 <body>
+<div class="preview-switch">
+  <button class="preview-btn active" id="btnDesktop" type="button">
+    <svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></svg>
+    Desktop
+  </button>
+  <button class="preview-btn" id="btnMobile" type="button">
+    <svg viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg>
+    Mobile
+  </button>
+</div>
+<div class="phone-shell" id="phoneShell">
+  <div class="phone-frame">
+    <iframe id="mobileFrame"></iframe>
+  </div>
+</div>
 <div class="wrap" id="mainWrap">
 
   <header>
@@ -978,6 +1031,42 @@ function updateHeader(sourceName){
     statusEl.innerHTML = 'แหล่งข้อมูล: __SOURCE_FILENAME__ (ค่าเริ่มต้น)';
     statusEl.classList.remove('custom');
   }
+}
+
+const btnDesktop = document.getElementById('btnDesktop');
+const btnMobile = document.getElementById('btnMobile');
+const phoneShell = document.getElementById('phoneShell');
+const mainWrap = document.getElementById('mainWrap');
+const mobileFrame = document.getElementById('mobileFrame');
+
+function buildMobileDoc(){
+  const clone = document.documentElement.cloneNode(true);
+  const ps = clone.querySelector('.preview-switch');
+  if(ps) ps.remove();
+  const shell = clone.querySelector('#phoneShell');
+  if(shell) shell.remove();
+  const wrap = clone.querySelector('#mainWrap');
+  if(wrap) wrap.classList.remove('hidden');
+  return '<!DOCTYPE html>\n' + clone.outerHTML;
+}
+
+if(btnDesktop && btnMobile && phoneShell && mainWrap && mobileFrame){
+  btnDesktop.addEventListener('click', ()=>{
+    btnDesktop.classList.add('active');
+    btnMobile.classList.remove('active');
+    phoneShell.classList.remove('active');
+    mainWrap.classList.remove('hidden');
+  });
+  btnMobile.addEventListener('click', ()=>{
+    btnMobile.classList.add('active');
+    btnDesktop.classList.remove('active');
+    mainWrap.classList.add('hidden');
+    phoneShell.classList.add('active');
+    if(!mobileFrame.dataset.loaded){
+      mobileFrame.srcdoc = buildMobileDoc();
+      mobileFrame.dataset.loaded = '1';
+    }
+  });
 }
 
 updateHeader(null);
