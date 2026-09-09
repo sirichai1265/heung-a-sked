@@ -40,16 +40,27 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 TEMPLATE_PATH = SCRIPT_DIR / "vessel_schedule_template.html"
 WHARF_CACHE_PATH = SCRIPT_DIR / "wharf_lookup.json"
 LOGO_PATH = SCRIPT_DIR / "logo ha.png"
+FAVICON_PATH = SCRIPT_DIR / "favicon.png"
+
+
+def _png_data_uri(path, warn_label):
+    if not path.exists():
+        print(f"[warn] {path.name} not found; {warn_label}")
+        return ""
+    import base64
+    b64 = base64.b64encode(path.read_bytes()).decode("ascii")
+    return f"data:image/png;base64,{b64}"
 
 
 def logo_data_uri():
-    """Return a base64 data URI for the header logo, or '' if not present."""
-    if not LOGO_PATH.exists():
-        print(f"[warn] {LOGO_PATH.name} not found; header logo will be hidden")
-        return ""
-    import base64
-    b64 = base64.b64encode(LOGO_PATH.read_bytes()).decode("ascii")
-    return f"data:image/png;base64,{b64}"
+    """Base64 data URI for the header logo, or '' if not present."""
+    return _png_data_uri(LOGO_PATH, "header logo will be hidden")
+
+
+def favicon_data_uri():
+    """Base64 data URI for the browser-tab favicon; falls back to the logo."""
+    uri = _png_data_uri(FAVICON_PATH, "using the full logo as favicon")
+    return uri or logo_data_uri()
 
 
 # ---------------------------------------------------------------------------
@@ -227,6 +238,7 @@ def write_dashboard(vessels, legs, changes, wharf_lookup, now, today_name, yeste
         source_label = f"{today_name} · Wharf.xls"
 
     html = html.replace("__LOGO_DATA_URI__", logo_data_uri())
+    html = html.replace("__FAVICON_DATA_URI__", favicon_data_uri())
     html = html.replace("__NOW_ISO__", now.isoformat())
     html = html.replace("__SCHEDULE_CHANGES_JSON__", json.dumps(changes))
     html = html.replace("__LEGS_JSON__", json.dumps(legs))
