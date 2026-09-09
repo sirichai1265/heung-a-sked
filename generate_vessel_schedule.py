@@ -42,6 +42,11 @@ WHARF_CACHE_PATH = SCRIPT_DIR / "wharf_lookup.json"
 LOGO_PATH = SCRIPT_DIR / "logo ha.png"
 FAVICON_PATH = SCRIPT_DIR / "favicon.png"
 
+# Canonical deployed location, used for absolute og:image / og:url so link
+# previews (LINE, Slack, Facebook, ...) resolve the Heung-A image. Override
+# with --base-url. Must end with a trailing slash.
+SITE_BASE_URL = "https://sirichai1265.github.io/VESSEL-SKED/"
+
 
 def _png_data_uri(path, warn_label):
     if not path.exists():
@@ -223,7 +228,7 @@ def build_schedule_changes(df_old, df_new):
 # HTML dashboard output
 # ---------------------------------------------------------------------------
 
-def write_dashboard(vessels, legs, changes, wharf_lookup, now, today_name, yesterday_name, outdir):
+def write_dashboard(vessels, legs, changes, wharf_lookup, now, today_name, yesterday_name, outdir, base_url=SITE_BASE_URL):
     if not TEMPLATE_PATH.exists():
         print(f"[error] template not found at {TEMPLATE_PATH}. Keep "
               f"vessel_schedule_template.html next to this script.", file=sys.stderr)
@@ -239,6 +244,7 @@ def write_dashboard(vessels, legs, changes, wharf_lookup, now, today_name, yeste
 
     html = html.replace("__LOGO_DATA_URI__", logo_data_uri())
     html = html.replace("__FAVICON_DATA_URI__", favicon_data_uri())
+    html = html.replace("__SITE_BASE_URL__", base_url if base_url.endswith("/") else base_url + "/")
     html = html.replace("__NOW_ISO__", now.isoformat())
     html = html.replace("__SCHEDULE_CHANGES_JSON__", json.dumps(changes))
     html = html.replace("__LEGS_JSON__", json.dumps(legs))
@@ -362,6 +368,8 @@ def main():
     ap.add_argument("--wharf", help="Wharf.xls code lookup file (omit to reuse cached wharf_lookup.json)")
     ap.add_argument("--now", help="Reference timestamp, ISO format e.g. 2026-09-09T12:00:00 (default: current time)")
     ap.add_argument("--outdir", default=".", help="Output directory (default: current directory)")
+    ap.add_argument("--base-url", default=SITE_BASE_URL,
+                    help=f"Public URL the dashboard is served from, for link-preview og:image (default: {SITE_BASE_URL})")
     args = ap.parse_args()
 
     today_path = Path(args.today)
@@ -392,7 +400,8 @@ def main():
     print("[5/5] Writing outputs ...")
     yesterday_name = Path(args.yesterday).name if args.yesterday else None
     html_path = write_dashboard(vessels, legs, changes, wharf_lookup, now,
-                                 today_path.name, yesterday_name, args.outdir)
+                                 today_path.name, yesterday_name, args.outdir,
+                                 base_url=args.base_url)
     xlsx_path = write_excel(vessels, legs, changes, today_path.name, yesterday_name, args.outdir)
 
     print()
