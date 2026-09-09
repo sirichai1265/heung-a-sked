@@ -93,7 +93,7 @@ def build_vessel_summary(df, now):
 
         docked = g[(g["ETA Date"] <= now) & (g["ETD Date"] >= now)]
         status = "unknown"
-        loc = wharf = since_eta = until_etd = dest_pod = None
+        loc = wharf = since_eta = until_etd = dest_pod = docked_vyg = None
         transit_from = transit_to = transit_eta = None
 
         if len(docked) > 0:
@@ -101,6 +101,7 @@ def build_vessel_summary(df, now):
             status = "docked"
             loc, wharf = d["POL"], d["Wharf"]
             since_eta, until_etd, dest_pod = d["ETA Date"], d["ETD Date"], d["POD"]
+            docked_vyg = d["Vyg Bound"]
         else:
             past = g[g["ETD Date"] <= now]
             fut = g[g["ETA Date"] >= now]
@@ -130,12 +131,15 @@ def build_vessel_summary(df, now):
             "dockedSince": since_eta.isoformat() if since_eta is not None else None,
             "dockedUntil": until_etd.isoformat() if until_etd is not None else None,
             "dockedNextDest": dest_pod,
+            "dockedVygBound": None if docked_vyg is None or pd.isna(docked_vyg) else str(docked_vyg),
             "transitFrom": transit_from, "transitTo": transit_to,
             "transitEta": transit_eta.isoformat() if transit_eta is not None else None,
             "bkkEta": bkk_row["ETA Date"].isoformat() if bkk_row is not None else None,
             "bkkWharf": bkk_row["Wharf"] if bkk_row is not None else None,
+            "bkkVygBound": str(bkk_row["Vyg Bound"]) if bkk_row is not None and not pd.isna(bkk_row["Vyg Bound"]) else None,
             "lchEta": lch_row["ETA Date"].isoformat() if lch_row is not None else None,
             "lchWharf": lch_row["Wharf"] if lch_row is not None else None,
+            "lchVygBound": str(lch_row["Vyg Bound"]) if lch_row is not None and not pd.isna(lch_row["Vyg Bound"]) else None,
         })
     return rows
 
@@ -252,9 +256,12 @@ def write_excel(vessels, legs, changes, today_name, yesterday_name, outdir):
             loc, note = "-", "No data in window"
         summary_rows.append({
             "Vessel Name": v["vessel"], "Service": v["service"], "Op.Liner": v["opLiner"],
-            "Status": v["status"], "Current Location": loc, "Note": note,
+            "Status": v["status"], "Current Location": loc,
+            "Vyg Bound": v.get("dockedVygBound"), "Note": note,
             "ETA THBKK": parse_dt(v["bkkEta"]), "Wharf THBKK": v["bkkWharf"],
+            "Vyg Bound THBKK": v.get("bkkVygBound"),
             "ETA THLCH": parse_dt(v["lchEta"]), "Wharf THLCH": v["lchWharf"],
+            "Vyg Bound THLCH": v.get("lchVygBound"),
         })
     df_summary = pd.DataFrame(summary_rows)
 

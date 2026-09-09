@@ -260,6 +260,8 @@
   .port-tile-eta.na{color:var(--paper-dim);font-weight:400;font-size:13px;}
   .port-tile-countdown{font-family:'IBM Plex Sans', sans-serif;font-size:11px;margin-top:3px;color:var(--ink-dim);}
   .port-tile-countdown.soon{color:var(--amber);font-weight:600;}
+  .port-tile-vyg{font-family:'IBM Plex Mono', monospace;color:var(--ink-dim);font-size:10.5px;margin-top:5px;letter-spacing:.02em;}
+  .port-tile-vyg b{color:var(--ink);font-weight:700;}
   .port-tile-wharf{font-family:'IBM Plex Sans', sans-serif;color:var(--ink-dim);font-size:10.5px;margin-top:5px;opacity:.85;}
 
   .card-footer{
@@ -592,7 +594,11 @@ function positionLine(v){
   return `<div class="position-line">${ICONS.question} <span>ไม่มีข้อมูลย้อนหลังในไฟล์นี้</span></div>`;
 }
 
-function portTile(eta, wharf, label, currentCall){
+function vygBoundLine(vb){
+  return vb ? `<div class="port-tile-vyg">Vyg Bound <b>${escapeHtml(vb)}</b></div>` : '';
+}
+
+function portTile(eta, wharf, label, currentCall, vygBound){
   if(currentCall){
     const wInfo = wharfInfo(currentCall.wharf);
     const hrs = hoursUntil(currentCall.until);
@@ -601,6 +607,7 @@ function portTile(eta, wharf, label, currentCall){
       <div class="port-tile-label">${ICONS.pin}${label} <span style="color:var(--teal);margin-left:4px">● NOW</span></div>
       <div class="port-tile-eta">Alongside</div>
       <div class="port-tile-countdown ${soon?'soon':''}">ออกไป ${currentCall.nextDest||'-'} ~${fmtDate(currentCall.until)} (${fmtCountdown(hrs)})</div>
+      ${vygBoundLine(currentCall.vygBound)}
       <div class="port-tile-wharf" title="${escapeHtml(wInfo)}">Wharf ${currentCall.wharf||'-'}${wInfo ? ` · ${escapeHtml(wInfo)}` : ''}</div>
     </div>`;
   }
@@ -617,6 +624,7 @@ function portTile(eta, wharf, label, currentCall){
     <div class="port-tile-label">${ICONS.pin}${label}</div>
     <div class="port-tile-eta">${fmtDate(eta)}</div>
     <div class="port-tile-countdown ${soon?'soon':''}">${fmtCountdown(hrs)}</div>
+    ${vygBoundLine(vygBound)}
     <div class="port-tile-wharf" title="${escapeHtml(wInfo)}">Wharf ${wharf||'-'}${wInfo ? ` · ${escapeHtml(wInfo)}` : ''}</div>
   </div>`;
 }
@@ -784,8 +792,8 @@ function render(){
       </div>
       ${positionLine(v)}
       <div class="ports-row">
-        ${portTile(v.bkkEta, v.bkkWharf, 'ETA → THBKK', (v.status==='docked' && v.dockedLoc==='THBKK') ? {wharf:v.dockedWharf, until:v.dockedUntil, nextDest:v.dockedNextDest} : null)}
-        ${portTile(v.lchEta, v.lchWharf, 'ETA → THLCH', (v.status==='docked' && v.dockedLoc==='THLCH') ? {wharf:v.dockedWharf, until:v.dockedUntil, nextDest:v.dockedNextDest} : null)}
+        ${portTile(v.bkkEta, v.bkkWharf, 'ETA → THBKK', (v.status==='docked' && v.dockedLoc==='THBKK') ? {wharf:v.dockedWharf, until:v.dockedUntil, nextDest:v.dockedNextDest, vygBound:v.dockedVygBound} : null, v.bkkVygBound)}
+        ${portTile(v.lchEta, v.lchWharf, 'ETA → THLCH', (v.status==='docked' && v.dockedLoc==='THLCH') ? {wharf:v.dockedWharf, until:v.dockedUntil, nextDest:v.dockedNextDest, vygBound:v.dockedVygBound} : null, v.lchVygBound)}
       </div>
       ${cardChangeLine(v)}
       <div class="card-footer">
@@ -899,12 +907,14 @@ function buildDashboardFromRows(rows, now){
     let status='unknown', dockedLoc=null, dockedWharf=null, dockedSince=null, dockedUntil=null, dockedNextDest=null;
     let transitFrom=null, transitTo=null, transitEta=null;
 
+    let dockedVygBound=null;
     if(docked.length){
       const d = docked[docked.length-1];
       status='docked'; dockedLoc=d.pol; dockedWharf=d.wharf;
       dockedSince=d.eta ? d.eta.toISOString() : null;
       dockedUntil=d.etd ? d.etd.toISOString() : null;
       dockedNextDest=d.pod;
+      dockedVygBound=d.vygBound ?? null;
     } else {
       const past = g.filter(l=> l.etd && l.etd <= now);
       const fut = g.filter(l=> l.eta && l.eta >= now);
@@ -931,12 +941,14 @@ function buildDashboardFromRows(rows, now){
       service: g[0]?.service ?? null,
       opLiner: g[0]?.opLiner ?? null,
       status,
-      dockedLoc, dockedWharf, dockedSince, dockedUntil, dockedNextDest,
+      dockedLoc, dockedWharf, dockedSince, dockedUntil, dockedNextDest, dockedVygBound,
       transitFrom, transitTo, transitEta,
       bkkEta: bkk[0]?.eta ? bkk[0].eta.toISOString() : null,
       bkkWharf: bkk[0]?.wharf ?? null,
+      bkkVygBound: bkk[0]?.vygBound ?? null,
       lchEta: lch[0]?.eta ? lch[0].eta.toISOString() : null,
       lchWharf: lch[0]?.wharf ?? null,
+      lchVygBound: lch[0]?.vygBound ?? null,
     });
   });
 
