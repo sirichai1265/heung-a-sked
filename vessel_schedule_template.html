@@ -9,30 +9,31 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
   :root{
-    --navy-deep:#0A1929;
-    --navy-panel:#102338;
-    --navy-line:#1C3A54;
+    --navy-deep:#EEF2F6;
+    --navy-panel:#FFFFFF;
+    --navy-line:#D6DEE6;
     --paper:#EDE6D6;
-    --paper-dim:#C9C0AA;
-    --ink:#F3EFE4;
-    --ink-dim:#9FB2C4;
-    --amber:#D98E3B;
-    --amber-soft:#3A2E1A;
-    --teal:#4FA39A;
-    --teal-soft:#123230;
-    --slate:#6E8CAE;
-    --slate-soft:#1B2E42;
-    --red-flag:#C15C4A;
-    --early:#4FA39A;
-    --delay:#D98E3B;
+    --paper-dim:#93A2AE;
+    --ink:#1B2A38;
+    --ink-dim:#5C6B7A;
+    --amber:#B26A1E;
+    --amber-soft:#F7EAD8;
+    --teal:#2F7D75;
+    --teal-soft:#DBEDEA;
+    --slate:#4F6C90;
+    --slate-soft:#E5EBF3;
+    --red-flag:#B0432F;
+    --early:#2F7D75;
+    --delay:#B26A1E;
   }
   *{box-sizing:border-box;}
+  html{color-scheme:light;}
   body{
     margin:0;
     background:var(--navy-deep);
     background-image:
-      radial-gradient(circle at 15% 0%, rgba(79,163,154,0.08), transparent 40%),
-      radial-gradient(circle at 85% 10%, rgba(217,142,59,0.06), transparent 45%);
+      radial-gradient(circle at 15% 0%, rgba(47,125,117,0.07), transparent 40%),
+      radial-gradient(circle at 85% 10%, rgba(178,106,30,0.06), transparent 45%);
     color:var(--ink);
     font-family:'IBM Plex Sans', sans-serif;
     min-height:100vh;
@@ -184,6 +185,7 @@
     display:flex;
     flex-direction:column;
     gap:12px;
+    box-shadow:0 1px 2px rgba(16,32,48,0.05);
     transition:border-color .15s, transform .15s;
     cursor:pointer;
   }
@@ -243,7 +245,7 @@
   .status-pill svg{width:13px;height:13px;stroke-width:2.4;fill:none;}
   .status-pill.docked{background:var(--teal-soft);color:var(--teal);}
   .status-pill.transit{background:var(--slate-soft);color:var(--slate);}
-  .status-pill.nodata{background:#22242a;color:var(--paper-dim);}
+  .status-pill.nodata{background:var(--slate-soft);color:var(--paper-dim);}
 
   .position-line{
     display:flex;align-items:center;gap:8px;
@@ -303,11 +305,11 @@
   .detail-scroll{max-height:340px;overflow-y:auto;overflow-x:auto;border-radius:6px;}
   table.leg-table{width:100%;min-width:640px;border-collapse:collapse;font-family:'IBM Plex Mono', monospace;font-size:11.5px;}
   table.leg-table th{
-    position:sticky;top:0;background:#16283c;color:var(--ink-dim);
+    position:sticky;top:0;background:var(--navy-deep);color:var(--ink-dim);
     text-align:left;padding:7px 10px;font-weight:500;letter-spacing:0.04em;
     border-bottom:1px solid var(--navy-line);
   }
-  table.leg-table td{padding:6px 10px;border-bottom:1px solid rgba(255,255,255,0.04);color:var(--ink-dim);}
+  table.leg-table td{padding:6px 10px;border-bottom:1px solid rgba(16,32,48,0.07);color:var(--ink-dim);}
   table.leg-table tr.leg-past td{opacity:.4;}
   table.leg-table tr.leg-current{background:rgba(79,163,154,0.12);}
   table.leg-table tr.leg-current td{color:var(--ink);}
@@ -409,7 +411,7 @@
     border:1px solid var(--navy-line);
     border-radius:10px;
     overflow:hidden;
-    box-shadow:0 8px 30px rgba(0,0,0,0.28);
+    box-shadow:0 8px 30px rgba(16,32,48,0.14);
   }
   .phone-frame iframe{
     width:100%;height:100%;border:none;background:var(--navy-deep);
