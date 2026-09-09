@@ -212,6 +212,20 @@
     margin:0;
     line-height:1.25;
   }
+  .v-name-vyg{
+    font-family:'IBM Plex Mono', monospace;
+    font-weight:600;
+    font-size:11.5px;
+    letter-spacing:.02em;
+    color:var(--teal);
+    background:var(--teal-soft);
+    border:1px solid var(--navy-line);
+    border-radius:5px;
+    padding:1px 6px;
+    margin-left:6px;
+    vertical-align:2px;
+    white-space:nowrap;
+  }
   .v-sub{
     font-family:'IBM Plex Sans', sans-serif;
     font-size:11.5px;
@@ -596,6 +610,17 @@ function vygBoundLine(vb){
   return vb ? `<div class="port-tile-vyg">Vyg Bound <b>${escapeHtml(vb)}</b></div>` : '';
 }
 
+// The single most relevant voyage for a vessel: the one it's alongside on,
+// else whichever of the next THBKK / THLCH calls comes first.
+function primaryVygBound(v){
+  if(v.status === 'docked' && v.dockedVygBound) return v.dockedVygBound;
+  const cands = [];
+  if(v.bkkEta && v.bkkVygBound) cands.push([new Date(v.bkkEta).getTime(), v.bkkVygBound]);
+  if(v.lchEta && v.lchVygBound) cands.push([new Date(v.lchEta).getTime(), v.lchVygBound]);
+  if(cands.length){ cands.sort((a,b)=>a[0]-b[0]); return cands[0][1]; }
+  return v.dockedVygBound || null;
+}
+
 function portTile(eta, wharf, label, currentCall, vygBound){
   if(currentCall){
     const wInfo = wharfInfo(currentCall.wharf);
@@ -776,13 +801,15 @@ function render(){
   }
   empty.style.display = 'none';
 
-  grid.innerHTML = list.map(v => `
+  grid.innerHTML = list.map(v => {
+    const pVyg = primaryVygBound(v);
+    return `
     <div class="card status-${v.status} ${isSoon(v)?'soon':''} ${expandedVessel===v.vessel?'expanded':''}" data-vessel="${v.vessel.replace(/"/g,'&quot;')}">
       <div class="card-top">
         <div class="card-name-group">
           <div class="ship-icon">${ICONS.ship}</div>
           <div>
-            <p class="v-name">${v.vessel}</p>
+            <p class="v-name">${v.vessel}${pVyg ? ` <span class="v-name-vyg">${escapeHtml(pVyg)}</span>` : ''}</p>
             <p class="v-sub">${v.service}${v.opLiner ? ` · Op.${v.opLiner}` : ''}</p>
           </div>
         </div>
@@ -799,7 +826,8 @@ function render(){
       </div>
     </div>
     ${expandedVessel===v.vessel ? renderDetailPanel(v.vessel) : ''}
-  `).join('');
+  `;
+  }).join('');
 
   grid.querySelectorAll('.card').forEach(card=>{
     card.addEventListener('click', ()=>{
