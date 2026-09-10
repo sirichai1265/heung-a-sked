@@ -1,14 +1,25 @@
 #requires -version 5
 <#
-  update.ps1 - regenerate the Vessel Schedule dashboard from a new SKED file
-  and push it to GitHub Pages.
+  update.ps1 - regenerate the Vessel Schedule dashboard and push it to
+  GitHub Pages.
 
-  Usage:
-    - Double-click update.bat  ............ uses the newest *-SKED.xls in this folder
-    - Drag a .xls onto update.bat ......... uses that file as "today"
-    - powershell -File update.ps1 9-10-SKED.xls
+  Modes:
+    -Mode full   (default) replace the whole dataset with a complete SKED
+    -Mode merge  overlay a partial SKED (some vessels only, each with its
+                 full rotation) onto the current dataset
+
+  Entry points:
+    update.bat            -> full, newest *-SKED.xls in this folder
+    drag .xls on update.bat        -> full, that file
+    drag .xls on update-partial.bat -> merge, that file
+
+  Early/Delay is computed automatically against the snapshot taken just
+  before this update (sked_prev.xlsx).
 #>
-param([string]$Today)
+param(
+    [string]$File,
+    [ValidateSet('full', 'merge')][string]$Mode = 'full'
+)
 
 $ErrorActionPreference = 'Stop'
 try { [Console]::OutputEncoding = [System.Text.Encoding]::UTF8 } catch {}
@@ -22,37 +33,41 @@ function Fail($msg) {
     exit 1
 }
 
-# --- pick the files -------------------------------------------------------
-$skeds = Get-ChildItem -Filter '*-SKED.xls' -File | Sort-Object LastWriteTime -Descending
-if ([string]::IsNullOrWhiteSpace($Today)) {
-    if ($skeds.Count -eq 0) { Fail 'ไม่พบไฟล์ *-SKED.xls ในโฟลเดอร์นี้' }
-    $Today = $skeds[0].Name
+# --- pick the input file -----------------------------------------------
+if ([string]::IsNullOrWhiteSpace($File)) {
+    if ($Mode -eq 'merge') {
+        Fail 'โหมด merge ต้องลากไฟล์ SKED (บางเรือ) มาวางบน update-partial.bat'
+    }
+    $newest = Get-ChildItem -Filter '*-SKED.xls' -File |
+        Sort-Object LastWriteTime -Descending | Select-Object -First 1
+    if (-not $newest) { Fail 'ไม่พบไฟล์ *-SKED.xls ในโฟลเดอร์นี้' }
+    $File = $newest.Name
 }
-$todayName = Split-Path $Today -Leaf
-if (-not (Test-Path -LiteralPath $todayName)) { Fail "ไม่พบไฟล์: $todayName" }
-
-$yesterday = $skeds | Where-Object { $_.Name -ne $todayName } | Select-Object -First 1
+$name = Split-Path $File -Leaf
+if (-not (Test-Path -LiteralPath $name)) { Fail "ไม่พบไฟล์: $name" }
 
 Write-Host '======================================================'
-Write-Host " TODAY     : $todayName"
-if ($yesterday) { Write-Host " YESTERDAY : $($yesterday.Name)  (Early/Delay เทียบให้)" }
-else            { Write-Host ' YESTERDAY : (ไม่มี - ข้าม Early/Delay)' }
+if ($Mode -eq 'merge') {
+    Write-Host " MERGE (เฉพาะบางเรือ) : $name" -ForegroundColor Yellow
+} else {
+    Write-Host " FULL (แทนทั้งหมด)    : $name"
+}
 Write-Host '======================================================'
 Write-Host ''
 
-# --- generate ------------------------------------------------------------
-$genArgs = @('generate_vessel_schedule.py', '--today', $todayName)
-if ($yesterday) { $genArgs += @('--yesterday', $yesterday.Name) }
+# --- generate --------------------------------------------------------
+if ($Mode -eq 'merge') { $genArgs = @('generate_vessel_schedule.py', '--merge', $name) }
+else                   { $genArgs = @('generate_vessel_schedule.py', '--full',  $name) }
 
 python @genArgs
 if ($LASTEXITCODE -ne 0) { Fail 'generate_vessel_schedule.py ล้มเหลว (ดู error ด้านบน)' }
 
 Copy-Item 'Vessel Schedule.html' 'index.html' -Force
 
-# --- commit + push -----------------------------------------------------
-$tag = [System.IO.Path]::GetFileNameWithoutExtension($todayName)
+# --- commit + push --------------------------------------------------
+$tag = [System.IO.Path]::GetFileNameWithoutExtension($name)
 git add -A
-git commit -m "Update: $tag" | Out-Host
+git commit -m "Update ($Mode): $tag" | Out-Host
 git push origin main | Out-Host
 if ($LASTEXITCODE -ne 0) { Fail 'git push ล้มเหลว (ตรวจ internet / สิทธิ์ GitHub)' }
 

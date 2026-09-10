@@ -10,19 +10,25 @@ from a daily SKED.xls file, an optional previous day's SKED.xls
 
 USAGE
 -----
-    python generate_vessel_schedule.py --today 9-9-SKED.xls \
-        --yesterday 9-8-SKED.xls \
-        --wharf Wharf.xls \
-        --now "2026-09-09T12:00:00" \
-        --outdir .
+    # full replace (a complete SKED export)
+    python generate_vessel_schedule.py --full 9-10-SKED.xls
 
-Only --today is required. If --yesterday is omitted, the Early/Delay
-feature will simply show no changes. If --wharf is omitted, the script
-looks for a cached wharf_lookup.json next to this script (built by an
-earlier run) and reuses it; if neither is available, wharf codes will
-just show without a resolved name.
+    # partial update: overlay a SKED that only contains some vessels
+    # (each with its full rotation) onto the current merged dataset
+    python generate_vessel_schedule.py --merge kt51-only.xls [--merge more.xls]
 
-If --now is omitted, the script uses the current system time.
+    # legacy one-shot mode (no stored state)
+    python generate_vessel_schedule.py --today 9-9-SKED.xls --yesterday 9-8-SKED.xls
+
+--full / --merge keep a canonical dataset in sked_current.xlsx and snapshot
+the pre-update copy to sked_prev.xlsx, which becomes the Early/Delay
+baseline automatically (no --yesterday needed). A --merge replaces every
+row of each vessel named in the partial file, then appends the partial's
+rows; vessels not in the partial are left as they were.
+
+If --wharf is omitted, the script reuses a cached wharf_lookup.json next to
+this script; if neither is available, wharf codes show without a resolved
+name. If --now is omitted, the current system time is used.
 
 REQUIRES: pandas, xlrd (for legacy .xls), openpyxl
     pip install pandas xlrd openpyxl --break-system-packages
@@ -30,6 +36,7 @@ REQUIRES: pandas, xlrd (for legacy .xls), openpyxl
 
 import argparse
 import json
+import shutil
 import sys
 from pathlib import Path
 from datetime import datetime
@@ -41,6 +48,11 @@ TEMPLATE_PATH = SCRIPT_DIR / "vessel_schedule_template.html"
 WHARF_CACHE_PATH = SCRIPT_DIR / "wharf_lookup.json"
 LOGO_PATH = SCRIPT_DIR / "logo ha.png"
 FAVICON_PATH = SCRIPT_DIR / "favicon.png"
+
+# Canonical merged dataset (the current full picture) and the snapshot taken
+# just before the last update, used for the Early/Delay comparison.
+SKED_CURRENT_PATH = SCRIPT_DIR / "sked_current.xlsx"
+SKED_PREV_PATH = SCRIPT_DIR / "sked_prev.xlsx"
 
 # Canonical deployed location, used for absolute og:image / og:url so link
 # previews (LINE, Slack, Facebook, ...) resolve the Heung-A image. Override
@@ -77,6 +89,24 @@ def load_sked(path):
     for c in ["ETA Date", "ETB Date", "ETD Date"]:
         df[c] = pd.to_datetime(df[c])
     return df
+
+
+def save_sked(df, path):
+    """Persist the merged dataset so the next run can build on it."""
+    df.to_excel(path, index=False)
+
+
+def merge_partial(base_df, partial_df):
+    """Overlay a partial SKED onto base_df. A partial file carries the full
+    forward rotation for the vessels it contains, so: drop every base row
+    whose 'Vessel Name' appears in the partial, then append the partial's
+    rows. Vessels absent from the partial are left untouched.
+
+    Returns (merged_df, [vessel names that were replaced])."""
+    vessels = sorted(v for v in partial_df["Vessel Name"].dropna().unique())
+    kept = base_df[~base_df["Vessel Name"].isin(vessels)]
+    merged = pd.concat([kept, partial_df], ignore_index=True)
+    return merged, vessels
 
 
 def load_wharf_lookup(wharf_path):
@@ -263,7 +293,7 @@ def write_dashboard(vessels, legs, changes, wharf_lookup, now, today_name, yeste
 # Excel output (Summary / Full Schedule / Early-Delay)
 # ---------------------------------------------------------------------------
 
-def write_excel(vessels, legs, changes, today_name, yesterday_name, outdir):
+def write_excel(vessels, legs, changes, today_name, yesterday_name, outdir, date_tag=None):
     from openpyxl import Workbook
     from openpyxl.styles import Font, PatternFill, Alignment
     from openpyxl.utils import get_column_letter
@@ -351,8 +381,10 @@ def write_excel(vessels, legs, changes, today_name, yesterday_name, outdir):
     write_sheet("Full Schedule", df_legs, {"ETA", "ETB", "ETD"})
     write_sheet("Early-Delay", df_changes, {old_col, new_col})
 
-    date_tag = today_name.replace(".xls", "").replace(".xlsx", "")
-    out_path = Path(outdir) / f"Vessel Schedule - {date_tag}.xlsx"
+    if date_tag is None:
+        date_tag = today_name.replace(".xls", "").replace(".xlsx", "")
+    name = "Vessel Schedule.xlsx" if not date_tag else f"Vessel Schedule - {date_tag}.xlsx"
+    out_path = Path(outdir) / name
     wb.save(out_path)
     return out_path
 
@@ -361,10 +393,74 @@ def write_excel(vessels, legs, changes, today_name, yesterday_name, outdir):
 # Main
 # ---------------------------------------------------------------------------
 
+def resolve_dataset(args):
+    """Figure out today's dataframe, the comparison dataframe, and labels
+    from the CLI args. Three modes:
+
+      --full FILE       replace the canonical dataset with FILE
+      --merge FILE ...  overlay partial SKED file(s) onto the canonical
+                        dataset, replacing whole vessels
+      --today / --yesterday   legacy one-shot mode, no canonical state
+
+    For --full / --merge the pre-update canonical dataset is snapshotted to
+    sked_prev.xlsx and used as the Early/Delay baseline automatically."""
+    if args.full or args.merge:
+        prev_df = None
+        if SKED_CURRENT_PATH.exists():
+            shutil.copyfile(SKED_CURRENT_PATH, SKED_PREV_PATH)
+            prev_df = load_sked(SKED_PREV_PATH)
+
+        if args.full:
+            print(f"[1/5] Full replace from {Path(args.full).name} ...")
+            cur_df = load_sked(Path(args.full))
+            src_desc = Path(args.full).name
+        else:
+            if not SKED_CURRENT_PATH.exists():
+                sys.exit("[error] --merge needs an existing sked_current.xlsx; "
+                         "run --full <full SKED file> once first.")
+            print(f"[1/5] Merging {len(args.merge)} partial file(s) into "
+                  f"{SKED_CURRENT_PATH.name} ...")
+            cur_df = load_sked(SKED_CURRENT_PATH)
+            notes = []
+            for p in args.merge:
+                pdf = load_sked(Path(p))
+                cur_df, replaced = merge_partial(cur_df, pdf)
+                print(f"       + {Path(p).name}: replaced {len(replaced)} vessel(s) "
+                      f"-> {', '.join(replaced)}")
+                notes.append(f"{Path(p).name} ({', '.join(replaced)})")
+            src_desc = "patched: " + "; ".join(notes)
+
+        save_sked(cur_df, SKED_CURRENT_PATH)
+        if prev_df is not None:
+            print(f"[2/5] Early/Delay baseline: {SKED_PREV_PATH.name} "
+                  f"(snapshot before this update)")
+        else:
+            print("[2/5] No prior sked_current.xlsx, skipping Early/Delay this run")
+        return (cur_df, prev_df, "sked_current.xlsx",
+                "prev" if prev_df is not None else None, src_desc)
+
+    # legacy one-shot mode
+    today_path = Path(args.today)
+    print(f"[1/5] Loading {today_path.name} ...")
+    cur_df = load_sked(today_path)
+    prev_df = None
+    if args.yesterday:
+        print(f"[2/5] Loading {Path(args.yesterday).name} for comparison ...")
+        prev_df = load_sked(args.yesterday)
+    else:
+        print("[2/5] No --yesterday given, skipping Early/Delay comparison")
+    return (cur_df, prev_df, today_path.name,
+            Path(args.yesterday).name if args.yesterday else None, today_path.name)
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--today", required=True, help="Today's SKED.xls file")
-    ap.add_argument("--yesterday", help="Previous day's SKED.xls, for Early/Delay comparison")
+    ap.add_argument("--full", help="Full SKED file to replace the canonical dataset (sked_current.xlsx)")
+    ap.add_argument("--merge", action="append", metavar="PARTIAL.xls",
+                    help="Partial SKED file (full rotation for only some vessels) to overlay "
+                         "onto the canonical dataset; repeatable")
+    ap.add_argument("--today", help="[legacy] Today's SKED.xls file (one-shot, no canonical state)")
+    ap.add_argument("--yesterday", help="[legacy] Previous day's SKED.xls, for Early/Delay comparison")
     ap.add_argument("--wharf", help="Wharf.xls code lookup file (omit to reuse cached wharf_lookup.json)")
     ap.add_argument("--now", help="Reference timestamp, ISO format e.g. 2026-09-09T12:00:00 (default: current time)")
     ap.add_argument("--outdir", default=".", help="Output directory (default: current directory)")
@@ -372,18 +468,14 @@ def main():
                     help=f"Public URL the dashboard is served from, for link-preview og:image (default: {SITE_BASE_URL})")
     args = ap.parse_args()
 
-    today_path = Path(args.today)
+    if not (args.full or args.merge or args.today):
+        ap.error("one of --full, --merge, or --today is required")
+    if args.full and args.merge:
+        ap.error("--full and --merge are mutually exclusive")
+
     now = datetime.fromisoformat(args.now) if args.now else datetime.now()
 
-    print(f"[1/5] Loading {today_path.name} ...")
-    df_today = load_sked(today_path)
-
-    df_yesterday = None
-    if args.yesterday:
-        print(f"[2/5] Loading {Path(args.yesterday).name} for comparison ...")
-        df_yesterday = load_sked(args.yesterday)
-    else:
-        print("[2/5] No --yesterday given, skipping Early/Delay comparison")
+    df_today, df_yesterday, today_name, yesterday_name, src_desc = resolve_dataset(args)
 
     print("[3/5] Loading wharf lookup ...")
     wharf_lookup = load_wharf_lookup(args.wharf)
@@ -398,11 +490,12 @@ def main():
         print(f"[warn] {len(missing_wharves)} wharf code(s) not found in lookup: {missing_wharves}")
 
     print("[5/5] Writing outputs ...")
-    yesterday_name = Path(args.yesterday).name if args.yesterday else None
+    date_tag = "" if (args.full or args.merge) else None
     html_path = write_dashboard(vessels, legs, changes, wharf_lookup, now,
-                                 today_path.name, yesterday_name, args.outdir,
+                                 src_desc, yesterday_name, args.outdir,
                                  base_url=args.base_url)
-    xlsx_path = write_excel(vessels, legs, changes, today_path.name, yesterday_name, args.outdir)
+    xlsx_path = write_excel(vessels, legs, changes, src_desc, yesterday_name,
+                            args.outdir, date_tag=date_tag)
 
     print()
     print(f"Done: {len(vessels)} vessels, {sum(len(v) for v in legs.values())} legs, "
