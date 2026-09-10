@@ -4,7 +4,7 @@ REM Drag a partial SKED .xls (some vessels only, each with its full
 REM rotation) onto this file to merge it into the current dataset.
 if "%~1"=="" (
   echo.
-  echo ลากไฟล์ SKED ^(บางเรือ^) มาวางบนไฟล์ update-partial.bat นี้
+  echo Drag a partial SKED .xls file onto update-partial.bat
   echo.
   pause
   exit /b 1

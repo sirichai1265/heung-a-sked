@@ -1,4 +1,4 @@
-#requires -version 5
+﻿#requires -version 5
 <#
   update.ps1 - regenerate the Vessel Schedule dashboard and push it to
   GitHub Pages.
