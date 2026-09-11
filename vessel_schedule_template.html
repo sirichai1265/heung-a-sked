@@ -388,21 +388,6 @@
   }
   .data-status.custom{color:var(--amber);}
   .data-status .reset-link{color:var(--slate);cursor:pointer;text-decoration:underline;}
-  .live-clock{
-    margin-left:auto;
-    display:flex;align-items:center;gap:7px;
-    font-family:'IBM Plex Mono', monospace;font-size:11px;letter-spacing:0.02em;
-    color:var(--ink-dim);white-space:nowrap;
-  }
-  .live-clock .live-dot{
-    width:7px;height:7px;border-radius:50%;background:var(--teal);flex-shrink:0;
-    animation:live-pulse 2s ease-in-out infinite;
-  }
-  .live-clock b{color:var(--ink);font-weight:600;}
-  @keyframes live-pulse{
-    0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(47,125,117,0.35);}
-    50%{opacity:0.55;box-shadow:0 0 0 4px rgba(47,125,117,0);}
-  }
   .toast{
     position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(10px);
     background:var(--navy-panel);border:1px solid var(--teal);color:var(--ink);
@@ -449,9 +434,14 @@
   }
 
   .preview-switch{
-    max-width:1100px;margin:0 auto 16px;
+    max-width:1100px;margin:0 auto 8px;
     display:flex;justify-content:flex-end;gap:6px;
   }
+  .source-status-row{
+    max-width:1100px;margin:0 auto 16px;
+    display:flex;justify-content:flex-end;
+  }
+  .source-status-row .data-status{margin-left:0;}
   .preview-btn{
     display:inline-flex;align-items:center;gap:6px;
     font-family:'IBM Plex Mono', monospace;font-size:11.5px;letter-spacing:0.03em;
@@ -499,6 +489,9 @@
     Mobile
   </button>
 </div>
+<div class="source-status-row">
+  <div class="data-status" id="dataStatus"></div>
+</div>
 <div class="phone-shell" id="phoneShell">
   <div class="phone-frame">
     <iframe id="mobileFrame"></iframe>
@@ -532,8 +525,6 @@
       <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
       Export ผลลัพธ์ที่แสดง (.xlsx)
     </button>
-    <div class="data-status" id="dataStatus"></div>
-    <div class="live-clock" id="liveClock"><span class="live-dot"></span><b id="liveClockText">—</b></div>
   </div>
 
   <div class="controls">
@@ -1178,25 +1169,8 @@ if(btnDesktop && btnMobile && phoneShell && mainWrap && mobileFrame){
   });
 }
 
-function startLiveClock(){
-  const el = document.getElementById('liveClockText');
-  if(!el) return;
-  const DAYS = ["อา.","จ.","อ.","พ.","พฤ.","ศ.","ส."];
-  const MONTHS = ["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
-  function tick(){
-    const d = new Date();
-    const hh = String(d.getHours()).padStart(2,'0');
-    const mm = String(d.getMinutes()).padStart(2,'0');
-    const ss = String(d.getSeconds()).padStart(2,'0');
-    el.textContent = `${DAYS[d.getDay()]} ${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()+543} · ${hh}:${mm}:${ss} น.`;
-  }
-  tick();
-  setInterval(tick, 1000);
-}
-
 updateHeader(null);
 render();
-startLiveClock();
 </script>
 </body>
 </html>
