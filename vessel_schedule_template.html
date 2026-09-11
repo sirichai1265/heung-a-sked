@@ -388,6 +388,21 @@
   }
   .data-status.custom{color:var(--amber);}
   .data-status .reset-link{color:var(--slate);cursor:pointer;text-decoration:underline;}
+  .live-clock{
+    margin-left:auto;
+    display:flex;align-items:center;gap:7px;
+    font-family:'IBM Plex Mono', monospace;font-size:11px;letter-spacing:0.02em;
+    color:var(--ink-dim);white-space:nowrap;
+  }
+  .live-clock .live-dot{
+    width:7px;height:7px;border-radius:50%;background:var(--teal);flex-shrink:0;
+    animation:live-pulse 2s ease-in-out infinite;
+  }
+  .live-clock b{color:var(--ink);font-weight:600;}
+  @keyframes live-pulse{
+    0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(47,125,117,0.35);}
+    50%{opacity:0.55;box-shadow:0 0 0 4px rgba(47,125,117,0);}
+  }
   .toast{
     position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(10px);
     background:var(--navy-panel);border:1px solid var(--teal);color:var(--ink);
@@ -516,15 +531,7 @@
   <div class="stats-bar" id="statsBar"></div>
 
   <div class="toolbar">
-    <label class="tool-btn primary" for="fileInput">
-      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-      อัปโหลดตารางเรือใหม่ (.xls/.xlsx)
-      <input type="file" id="fileInput" accept=".xls,.xlsx">
-    </label>
-    <button class="tool-btn" id="exportBtn" type="button">
-      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-      Export ผลลัพธ์ที่แสดง (.xlsx)
-    </button>
+    <div class="live-clock" id="liveClock"><span class="live-dot"></span><b id="liveClockText">—</b></div>
   </div>
 
   <div class="controls">
@@ -942,195 +949,10 @@ document.querySelectorAll('.chip').forEach(chip=>{
   });
 });
 
-// ---------- Upload & Rebuild ----------
-function toast(msg, isError){
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.toggle('error', !!isError);
-  t.classList.add('show');
-  setTimeout(()=>t.classList.remove('show'), 3200);
-}
-
-function excelDateToJs(val){
-  if(val instanceof Date) return val;
-  if(typeof val === 'number'){
-    // Excel serial date (days since 1899-12-30)
-    return new Date(Math.round((val - 25569) * 86400 * 1000));
-  }
-  if(typeof val === 'string' && val.trim()){
-    const d = new Date(val);
-    if(!isNaN(d)) return d;
-  }
-  return null;
-}
-
-function buildDashboardFromRows(rows, now){
-  // group by Vessel Name
-  const groups = {};
-  rows.forEach(r=>{
-    const name = (r['Vessel Name'] || '').toString().trim();
-    if(!name || name === 'TO BE NOMINATED') return;
-    if(!groups[name]) groups[name] = [];
-    const eta = excelDateToJs(r['ETA Date']);
-    const etb = excelDateToJs(r['ETB Date']);
-    const etd = excelDateToJs(r['ETD Date']);
-    groups[name].push({
-      vesselCode: r['Vessel'] != null ? String(r['Vessel']).trim() : null,
-      service: r['Service'] ?? null,
-      opLiner: r['Op.Liner'] ?? null,
-      vyg: r['Vyg'] != null ? String(r['Vyg']) : null,
-      bound: r['Bound'] ?? null,
-      vygBound: r['Vyg Bound'] ?? null,
-      wharf: r['Wharf'] ?? null,
-      pol: r['POL'] ?? null,
-      pod: r['POD'] ?? null,
-      eta, etb, etd
-    });
-  });
-
-  const vessels = [];
-  const legs = {};
-  Object.keys(groups).sort().forEach(name=>{
-    const g = groups[name].slice().sort((a,b)=> (a.eta?.getTime()||0) - (b.eta?.getTime()||0));
-    legs[name] = g.map(l=>({
-      service: l.service, vyg: l.vyg, bound: l.bound, vygBound: l.vygBound,
-      wharf: l.wharf, pol: l.pol, pod: l.pod,
-      eta: l.eta ? l.eta.toISOString() : null,
-      etb: l.etb ? l.etb.toISOString() : null,
-      etd: l.etd ? l.etd.toISOString() : null,
-    }));
-
-    const docked = g.filter(l=> l.eta && l.etd && l.eta <= now && l.etd >= now);
-    let status='unknown', dockedLoc=null, dockedWharf=null, dockedSince=null, dockedUntil=null, dockedNextDest=null;
-    let transitFrom=null, transitTo=null, transitEta=null;
-
-    let dockedVygBound=null;
-    if(docked.length){
-      const d = docked[docked.length-1];
-      status='docked'; dockedLoc=d.pol; dockedWharf=d.wharf;
-      dockedSince=d.eta ? d.eta.toISOString() : null;
-      dockedUntil=d.etd ? d.etd.toISOString() : null;
-      dockedNextDest=d.pod;
-      dockedVygBound=d.vygBound ?? null;
-    } else {
-      const past = g.filter(l=> l.etd && l.etd <= now);
-      const fut = g.filter(l=> l.eta && l.eta >= now);
-      if(past.length && fut.length){
-        status='transit';
-        transitFrom = past[past.length-1].pol;
-        transitTo = fut[0].pol;
-        transitEta = fut[0].eta ? fut[0].eta.toISOString() : null;
-      } else if(past.length){
-        status='transit';
-        transitFrom = past[past.length-1].pol;
-        transitTo = past[past.length-1].pod;
-      } else {
-        status='nodata';
-      }
-    }
-
-    const fut2 = g.filter(l=> l.eta && l.eta > now);
-    const bkk = fut2.filter(l=> l.pol === 'THBKK').sort((a,b)=>a.eta-b.eta);
-    const lch = fut2.filter(l=> l.pol === 'THLCH').sort((a,b)=>a.eta-b.eta);
-
-    vessels.push({
-      vessel: name,
-      vesselCode: g.find(l=>l.vesselCode)?.vesselCode ?? null,
-      service: g[0]?.service ?? null,
-      opLiner: g[0]?.opLiner ?? null,
-      status,
-      dockedLoc, dockedWharf, dockedSince, dockedUntil, dockedNextDest, dockedVygBound,
-      transitFrom, transitTo, transitEta,
-      bkkEta: bkk[0]?.eta ? bkk[0].eta.toISOString() : null,
-      bkkWharf: bkk[0]?.wharf ?? null,
-      bkkVygBound: bkk[0]?.vygBound ?? null,
-      lchEta: lch[0]?.eta ? lch[0].eta.toISOString() : null,
-      lchWharf: lch[0]?.wharf ?? null,
-      lchVygBound: lch[0]?.vygBound ?? null,
-    });
-  });
-
-  return { vessels, legs };
-}
-
-document.getElementById('fileInput').addEventListener('change', async (e)=>{
-  const file = e.target.files[0];
-  if(!file) return;
-  try{
-    const buf = await file.arrayBuffer();
-    const wb = XLSX.read(buf, {type:'array', cellDates:true});
-    const sheetName = wb.SheetNames[0];
-    const sheet = wb.Sheets[sheetName];
-    const rows = XLSX.utils.sheet_to_json(sheet, {defval:null});
-    if(!rows.length || !('Vessel Name' in rows[0])){
-      toast('ไฟล์นี้ไม่มีคอลัมน์ "Vessel Name" ที่คาดไว้ ลองตรวจสอบรูปแบบไฟล์', true);
-      e.target.value = '';
-      return;
-    }
-    const newNow = new Date();
-    const built = buildDashboardFromRows(rows, newNow);
-    if(!built.vessels.length){
-      toast('ไม่พบข้อมูลเรือในไฟล์นี้', true);
-      e.target.value = '';
-      return;
-    }
-    NOW = newNow;
-    VESSELS = built.vessels;
-    VESSEL_LEGS = built.legs;
-    expandedVessel = null;
-    currentQuery = '';
-    document.getElementById('searchInput').value = '';
-    document.getElementById('searchBox').classList.remove('has-text');
-    updateHeader(file.name);
-    render();
-    toast(`โหลดข้อมูลใหม่แล้ว: ${built.vessels.length} ลำ จาก ${file.name}`);
-  } catch(err){
-    console.error(err);
-    toast('อ่านไฟล์ไม่สำเร็จ — ตรวจสอบว่าเป็นไฟล์ .xls หรือ .xlsx ที่ถูกต้อง', true);
-  }
-  e.target.value = '';
-});
-
-document.getElementById('exportBtn').addEventListener('click', ()=>{
-  if(!lastRenderedList || !lastRenderedList.length){
-    toast('ไม่มีข้อมูลให้ export ในตอนนี้', true);
-    return;
-  }
-  const rows = lastRenderedList.map(v=>({
-    'Vessel Name': v.vessel,
-    'Status': v.status,
-    'Current Location': v.status==='docked' ? v.dockedLoc : (v.status==='transit' ? `${v.transitFrom||''} -> ${v.transitTo||''}` : ''),
-    'ETA THBKK': v.bkkEta ? fmtDateShort(v.bkkEta) : '',
-    'Wharf THBKK': v.bkkWharf || '',
-    'Wharf THBKK Name': wharfInfo(v.bkkWharf) || '',
-    'ETA THLCH': v.lchEta ? fmtDateShort(v.lchEta) : '',
-    'Wharf THLCH': v.lchWharf || '',
-    'Wharf THLCH Name': wharfInfo(v.lchWharf) || '',
-  }));
-  const ws = XLSX.utils.json_to_sheet(rows);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'Vessel Schedule');
-  XLSX.writeFile(wb, 'vessel_planner_export.xlsx');
-  toast(`Export แล้ว ${rows.length} รายการ`);
-});
-
-function updateHeader(sourceName){
+function updateHeader(){
   document.getElementById('nowReadout').textContent = fmtDate(NOW.toISOString());
   const statusEl = document.getElementById('dataStatus');
-  if(sourceName){
-    statusEl.innerHTML = `แหล่งข้อมูล: <b style="color:var(--amber)">${sourceName}</b> · <span class="reset-link" id="resetLink">ใช้ข้อมูลเริ่มต้น</span>`;
-    statusEl.classList.add('custom');
-    document.getElementById('resetLink').addEventListener('click', ()=>{
-      NOW = DEFAULT_NOW; VESSELS = DEFAULT_VESSELS; VESSEL_LEGS = DEFAULT_LEGS;
-      expandedVessel = null;
-      updateHeader(null);
-      render();
-      toast('กลับไปใช้ข้อมูลเริ่มต้น (__SOURCE_FILENAME__) แล้ว');
-    });
-  } else {
-    statusEl.innerHTML = 'แหล่งข้อมูล: __SOURCE_FILENAME__ (ค่าเริ่มต้น)';
-    statusEl.classList.remove('custom');
-  }
+  statusEl.innerHTML = 'แหล่งข้อมูล: __SOURCE_FILENAME__ (ค่าเริ่มต้น)';
 }
 
 const btnDesktop = document.getElementById('btnDesktop');
@@ -1169,8 +991,25 @@ if(btnDesktop && btnMobile && phoneShell && mainWrap && mobileFrame){
   });
 }
 
-updateHeader(null);
+function startLiveClock(){
+  const el = document.getElementById('liveClockText');
+  if(!el) return;
+  const DAYS = ["อา.","จ.","อ.","พ.","พฤ.","ศ.","ส."];
+  const MONTHS = ["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
+  function tick(){
+    const d = new Date();
+    const hh = String(d.getHours()).padStart(2,'0');
+    const mm = String(d.getMinutes()).padStart(2,'0');
+    const ss = String(d.getSeconds()).padStart(2,'0');
+    el.textContent = `${DAYS[d.getDay()]} ${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()+543} · ${hh}:${mm}:${ss} น.`;
+  }
+  tick();
+  setInterval(tick, 1000);
+}
+
+updateHeader();
 render();
+startLiveClock();
 </script>
 </body>
 </html>
