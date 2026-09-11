@@ -388,6 +388,21 @@
   }
   .data-status.custom{color:var(--amber);}
   .data-status .reset-link{color:var(--slate);cursor:pointer;text-decoration:underline;}
+  .live-clock{
+    margin-left:auto;
+    display:flex;align-items:center;gap:7px;
+    font-family:'IBM Plex Mono', monospace;font-size:11px;letter-spacing:0.02em;
+    color:var(--ink-dim);white-space:nowrap;
+  }
+  .live-clock .live-dot{
+    width:7px;height:7px;border-radius:50%;background:var(--teal);flex-shrink:0;
+    animation:live-pulse 2s ease-in-out infinite;
+  }
+  .live-clock b{color:var(--ink);font-weight:600;}
+  @keyframes live-pulse{
+    0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(47,125,117,0.35);}
+    50%{opacity:0.55;box-shadow:0 0 0 4px rgba(47,125,117,0);}
+  }
   .toast{
     position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(10px);
     background:var(--navy-panel);border:1px solid var(--teal);color:var(--ink);
@@ -518,6 +533,7 @@
       Export ผลลัพธ์ที่แสดง (.xlsx)
     </button>
     <div class="data-status" id="dataStatus"></div>
+    <div class="live-clock" id="liveClock"><span class="live-dot"></span><b id="liveClockText">—</b></div>
   </div>
 
   <div class="controls">
@@ -1162,8 +1178,25 @@ if(btnDesktop && btnMobile && phoneShell && mainWrap && mobileFrame){
   });
 }
 
+function startLiveClock(){
+  const el = document.getElementById('liveClockText');
+  if(!el) return;
+  const DAYS = ["อา.","จ.","อ.","พ.","พฤ.","ศ.","ส."];
+  const MONTHS = ["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
+  function tick(){
+    const d = new Date();
+    const hh = String(d.getHours()).padStart(2,'0');
+    const mm = String(d.getMinutes()).padStart(2,'0');
+    const ss = String(d.getSeconds()).padStart(2,'0');
+    el.textContent = `${DAYS[d.getDay()]} ${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()+543} · ${hh}:${mm}:${ss} น.`;
+  }
+  tick();
+  setInterval(tick, 1000);
+}
+
 updateHeader(null);
 render();
+startLiveClock();
 </script>
 </body>
 </html>
