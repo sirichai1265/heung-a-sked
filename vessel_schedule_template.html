@@ -40,7 +40,7 @@
     --delay:#B26A1E;
   }
   *{box-sizing:border-box;}
-  html{color-scheme:light;}
+  html{color-scheme:light;overflow-x:hidden;}
   svg{stroke:currentColor;fill:none;stroke-linecap:round;stroke-linejoin:round;}
   body{
     margin:0;
@@ -56,6 +56,7 @@
     min-height:100vh;
     padding:30px 22px 64px;
     -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
   }
   .wrap{max-width:1120px;margin:0 auto;}
 
@@ -63,15 +64,17 @@
     display:flex;
     align-items:center;
     gap:18px;
+    min-width:0;
   }
   .brand-logo{
     height:88px;
     width:auto;
     max-width:100%;
     object-fit:contain;
-    flex-shrink:0;
+    flex-shrink:1;
   }
   .brand-logo[src=""],.brand-logo:not([src]){display:none;}
+  .brand-text{min-width:0;}
 
   header{
     display:flex;
@@ -446,6 +449,15 @@
     .ports-row{grid-template-columns:1fr;}
     header{flex-direction:column;align-items:flex-start;}
     .now-readout{text-align:left;}
+    .brand-logo{height:64px;}
+    h1{font-size:24px;}
+    .brand-eyebrow{font-size:9.5px;letter-spacing:0.14em;}
+  }
+  @media (max-width:480px){
+    body{padding:20px 14px 48px;}
+    .brand-block{flex-direction:column;align-items:flex-start;gap:10px;}
+    .brand-logo{height:56px;}
+    h1{font-size:21px;}
   }
 
   .preview-switch{
@@ -517,7 +529,7 @@
   <header>
     <div class="brand-block">
       <img class="brand-logo" src="__LOGO_DATA_URI__" alt="Heung-A Line">
-      <div>
+      <div class="brand-text">
         <p class="brand-eyebrow">Terminal Ops · Rotation Sked</p>
         <h1>Vessel Schedule</h1>
       </div>
