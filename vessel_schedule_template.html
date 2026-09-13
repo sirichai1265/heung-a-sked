@@ -66,12 +66,22 @@
     gap:18px;
     min-width:0;
   }
+  .brand-logo-plate{
+    background:#FFFFFF;
+    border-radius:10px;
+    padding:8px 14px;
+    display:inline-flex;
+    align-items:center;
+    flex-shrink:0;
+    box-shadow:0 2px 10px rgba(0,0,0,0.22);
+  }
   .brand-logo{
     height:88px;
     width:auto;
     max-width:100%;
     object-fit:contain;
     flex-shrink:1;
+    display:block;
   }
   .brand-logo[src=""],.brand-logo:not([src]){display:none;}
   .brand-text{min-width:0;}
@@ -82,9 +92,11 @@
     align-items:center;
     gap:20px;
     flex-wrap:wrap;
-    border-bottom:1px solid var(--navy-line);
-    padding-bottom:20px;
-    margin-bottom:24px;
+    background:#122436;
+    margin:-30px -22px 26px;
+    padding:26px 22px 24px;
+    border-radius:0 0 20px 20px;
+    box-shadow:0 10px 28px rgba(10,20,30,0.22);
   }
   .brand-eyebrow{
     font-family:'IBM Plex Mono', monospace;
@@ -100,21 +112,20 @@
     font-size:30px;
     margin:0;
     letter-spacing:-0.015em;
-    color:var(--ink);
+    color:#FFFFFF;
   }
   .now-readout{
     font-family:'IBM Plex Mono', monospace;
     font-size:11.5px;
-    color:var(--ink-dim);
+    color:#A9BDCC;
     text-align:right;
     line-height:1.7;
-    background:var(--navy-panel);
-    border:1px solid var(--navy-line);
+    background:rgba(255,255,255,0.07);
+    border:1px solid rgba(255,255,255,0.14);
     border-radius:10px;
     padding:9px 13px;
-    box-shadow:0 1px 2px rgba(16,32,48,0.04);
   }
-  .now-readout b{color:var(--teal);font-weight:600;}
+  .now-readout b{color:#5FC9BB;font-weight:600;}
 
   .controls{
     display:flex;
@@ -391,21 +402,6 @@
   }
   .data-status.custom{color:var(--amber);}
   .data-status .reset-link{color:var(--slate);cursor:pointer;text-decoration:underline;}
-  .live-clock{
-    margin-left:auto;
-    display:flex;align-items:center;gap:7px;
-    font-family:'IBM Plex Mono', monospace;font-size:11px;letter-spacing:0.02em;
-    color:var(--ink-dim);white-space:nowrap;
-  }
-  .live-clock .live-dot{
-    width:7px;height:7px;border-radius:50%;background:var(--teal);flex-shrink:0;
-    animation:live-pulse 2s ease-in-out infinite;
-  }
-  .live-clock b{color:var(--ink);font-weight:600;}
-  @keyframes live-pulse{
-    0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(47,125,117,0.35);}
-    50%{opacity:0.55;box-shadow:0 0 0 4px rgba(47,125,117,0);}
-  }
   .toast{
     position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(10px);
     background:var(--navy-panel);border:1px solid var(--teal);color:var(--ink);
@@ -455,6 +451,7 @@
   }
   @media (max-width:480px){
     body{padding:20px 14px 48px;}
+    header{margin:-20px -14px 22px;padding:20px 14px 18px;}
     .brand-block{flex-direction:column;align-items:flex-start;gap:10px;}
     .brand-logo{height:56px;}
     h1{font-size:21px;}
@@ -528,7 +525,9 @@
 
   <header>
     <div class="brand-block">
-      <img class="brand-logo" src="__LOGO_DATA_URI__" alt="Heung-A Line">
+      <div class="brand-logo-plate">
+        <img class="brand-logo" src="__LOGO_DATA_URI__" alt="Heung-A Line">
+      </div>
       <div class="brand-text">
         <p class="brand-eyebrow">Terminal Ops · Rotation Sked</p>
         <h1>Vessel Schedule</h1>
@@ -542,10 +541,6 @@
 
   <div class="stats-bar" id="statsBar"></div>
 
-  <div class="toolbar">
-    <div class="live-clock" id="liveClock"><span class="live-dot"></span><b id="liveClockText">—</b></div>
-  </div>
-
   <div class="controls">
     <div class="search-box" id="searchBox">
       <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -555,7 +550,7 @@
     <div class="chip-row" id="statusChips">
       <div class="chip active" data-filter="all">ALL</div>
       <div class="chip" data-filter="docked">ALONGSIDE</div>
-      <div class="chip" data-filter="transit">IN TRANSIT</div>
+      <div class="chip" data-filter="transit">SAILING</div>
       <div class="chip" data-filter="bkk">→ THBKK</div>
       <div class="chip" data-filter="lch">→ THLCH</div>
       <div class="chip" data-filter="changed">⚠ EARLY/DELAY</div>
@@ -580,7 +575,7 @@
   <footer>
     <div class="legend">
       <span><i class="dot" style="background:var(--teal)"></i>Alongside</span>
-      <span><i class="dot" style="background:var(--slate)"></i>In transit</span>
+      <span><i class="dot" style="background:var(--slate)"></i>Sailing</span>
       <span><i class="dot" style="background:var(--amber)"></i>Arriving &lt; 48h</span>
       <span><i class="dot" style="background:var(--paper-dim)"></i>No data in window</span>
       <span><i class="dot" style="background:var(--amber)"></i>▲ Delay vs prev sked</span>
@@ -670,7 +665,7 @@ function cardChangeLine(v){
 
 function statusPill(v){
   if(v.status === 'docked') return `<div class="status-pill docked">${ICONS.anchor} Alongside</div>`;
-  if(v.status === 'transit') return `<div class="status-pill transit">${ICONS.transit} In transit</div>`;
+  if(v.status === 'transit') return `<div class="status-pill transit">${ICONS.transit} Sailing</div>`;
   return `<div class="status-pill nodata">${ICONS.question} No data</div>`;
 }
 
@@ -1003,25 +998,8 @@ if(btnDesktop && btnMobile && phoneShell && mainWrap && mobileFrame){
   });
 }
 
-function startLiveClock(){
-  const el = document.getElementById('liveClockText');
-  if(!el) return;
-  const DAYS = ["อา.","จ.","อ.","พ.","พฤ.","ศ.","ส."];
-  const MONTHS = ["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
-  function tick(){
-    const d = new Date();
-    const hh = String(d.getHours()).padStart(2,'0');
-    const mm = String(d.getMinutes()).padStart(2,'0');
-    const ss = String(d.getSeconds()).padStart(2,'0');
-    el.textContent = `${DAYS[d.getDay()]} ${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()+543} · ${hh}:${mm}:${ss} น.`;
-  }
-  tick();
-  setInterval(tick, 1000);
-}
-
 updateHeader();
 render();
-startLiveClock();
 </script>
 </body>
 </html>
