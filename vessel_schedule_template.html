@@ -1104,7 +1104,7 @@ function renderCalDetail(idx){
         <div class="cal-detail-row">
           <span class="cal-detail-time">${fmtTime(e.eta)}</span>
           <span class="cal-detail-port ${e.port==='THBKK'?'port-bkk':'port-lch'}">${e.port}</span>
-          <span class="cal-detail-vessel">${escapeHtml(e.vessel)}${e.code?` <span class="v-code">${escapeHtml(e.code)}</span>`:''}</span>
+          <span class="cal-detail-vessel">${e.code?`<span class="v-code">${escapeHtml(e.code)}</span> `:''}${escapeHtml(e.vessel)}</span>
           <span class="cal-detail-wharf">${escapeHtml(wharfLabel(e.wharf))}</span>
         </div>
       `).join('')}
