@@ -460,68 +460,114 @@
     h1{font-size:21px;}
   }
 
-  .preview-switch{
-    max-width:960px;margin:0 auto 8px;
-    display:flex;justify-content:flex-end;gap:6px;
-  }
   .source-status-row{
     display:none;
   }
   .source-status-row .data-status{margin-left:0;}
-  .preview-btn{
-    display:inline-flex;align-items:center;gap:6px;
+
+  .view-switch{
+    display:flex;gap:8px;margin:4px 0 16px;
+  }
+  .view-btn{
+    display:inline-flex;align-items:center;gap:7px;
     font-family:'IBM Plex Mono', monospace;font-size:11.5px;letter-spacing:0.03em;
-    padding:8px 13px;border-radius:6px;
+    padding:8px 14px;border-radius:8px;
     border:1px solid var(--navy-line);background:var(--navy-panel);color:var(--ink-dim);
     cursor:pointer;transition:all .15s;
   }
-  .preview-btn svg{width:14px;height:14px;stroke-width:2;fill:none;}
-  .preview-btn:hover{border-color:var(--teal);color:var(--ink);}
-  .preview-btn.active{background:var(--teal-soft);border-color:var(--teal);color:var(--teal);}
+  .view-btn svg{width:14px;height:14px;stroke-width:2;fill:none;}
+  .view-btn:hover{border-color:var(--teal);color:var(--ink);}
+  .view-btn.active{background:var(--teal-soft);border-color:var(--teal);color:var(--teal);}
 
-  .phone-shell{
-    display:none;
-    justify-content:center;
-    padding:4px 0 40px;
+  .calendar-view{margin-top:4px;}
+  .cal-nav{
+    display:flex;align-items:center;gap:10px;margin-bottom:12px;
   }
-  .phone-shell.active{display:flex;}
-  .phone-frame{
-    width:400px;
-    max-width:94vw;
-    height:calc(100vh - 110px);
-    min-height:600px;
-    background:var(--navy-deep);
-    border:1px solid var(--navy-line);
-    border-radius:10px;
-    overflow:hidden;
-    box-shadow:0 8px 30px rgba(16,32,48,0.14);
+  .cal-nav-btn{
+    width:32px;height:32px;border-radius:8px;
+    border:1px solid var(--navy-line);background:var(--navy-panel);color:var(--ink-dim);
+    font-size:18px;line-height:1;cursor:pointer;transition:all .15s;
   }
-  .phone-frame iframe{
-    width:100%;height:100%;border:none;background:var(--navy-deep);
-    display:block;
+  .cal-nav-btn:hover{border-color:var(--teal);color:var(--teal);}
+  .cal-month-label{
+    font-family:'Space Grotesk', sans-serif;font-weight:700;font-size:17px;color:var(--ink);
+    min-width:150px;
   }
-  .wrap.hidden{display:none;}
+  .cal-today-btn{
+    margin-left:auto;
+    font-family:'IBM Plex Mono', monospace;font-size:11px;letter-spacing:0.03em;
+    padding:7px 12px;border-radius:8px;
+    border:1px solid var(--navy-line);background:var(--navy-panel);color:var(--ink-dim);
+    cursor:pointer;transition:all .15s;
+  }
+  .cal-today-btn:hover{border-color:var(--teal);color:var(--teal);}
+  .cal-weekdays{
+    display:grid;grid-template-columns:repeat(7,1fr);gap:6px;
+    font-family:'IBM Plex Mono', monospace;font-size:10.5px;letter-spacing:0.05em;
+    color:var(--ink-dim);text-transform:uppercase;margin-bottom:6px;text-align:center;
+  }
+  .cal-grid{
+    display:grid;grid-template-columns:repeat(7,1fr);gap:6px;
+  }
+  .cal-cell{
+    background:var(--navy-panel);border:1px solid var(--navy-line);border-radius:9px;
+    min-height:76px;padding:6px 6px 5px;display:flex;flex-direction:column;gap:3px;
+    transition:border-color .15s, box-shadow .15s;
+  }
+  .cal-cell[data-has="true"]{cursor:pointer;}
+  .cal-cell[data-has="true"]:hover{border-color:var(--teal);}
+  .cal-cell.out{opacity:.42;}
+  .cal-cell.today{border-color:var(--amber);box-shadow:0 0 0 1px var(--amber) inset;}
+  .cal-cell.selected{border-color:var(--teal);box-shadow:0 0 0 1px var(--teal) inset;background:var(--teal-soft);}
+  .cal-daynum{
+    font-family:'IBM Plex Mono', monospace;font-size:11px;font-weight:600;color:var(--ink-dim);
+  }
+  .cal-cell.today .cal-daynum{color:var(--amber);}
+  .cal-entries{display:flex;flex-direction:column;gap:2px;}
+  .cal-chip{
+    font-family:'IBM Plex Mono', monospace;font-size:9.5px;letter-spacing:0.01em;
+    padding:1px 5px;border-radius:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .cal-chip.port-bkk{background:var(--teal-soft);color:var(--teal);}
+  .cal-chip.port-lch{background:var(--amber-soft);color:var(--amber);}
+  .cal-more{font-family:'IBM Plex Mono', monospace;font-size:9px;color:var(--ink-dim);padding-left:5px;}
+  .cal-detail{
+    margin-top:14px;background:var(--navy-panel);border:1px solid var(--navy-line);border-radius:10px;
+    padding:14px 16px;
+  }
+  .cal-detail-title{
+    font-family:'IBM Plex Mono', monospace;font-size:11px;letter-spacing:0.06em;text-transform:uppercase;
+    color:var(--teal);margin-bottom:10px;
+  }
+  .cal-detail-row{
+    display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--navy-line);
+    font-size:12.5px;flex-wrap:wrap;
+  }
+  .cal-detail-row:last-child{border-bottom:none;}
+  .cal-detail-time{font-family:'IBM Plex Mono', monospace;font-weight:600;color:var(--ink);min-width:44px;}
+  .cal-detail-port{
+    font-family:'IBM Plex Mono', monospace;font-size:10px;font-weight:700;padding:2px 7px;border-radius:5px;
+  }
+  .cal-detail-port.port-bkk{background:var(--teal-soft);color:var(--teal);}
+  .cal-detail-port.port-lch{background:var(--amber-soft);color:var(--amber);}
+  .cal-detail-vessel{font-weight:600;color:var(--ink);flex:1 1 180px;}
+  .cal-detail-wharf{color:var(--ink-dim);font-size:11.5px;}
+  .cal-legend{
+    display:flex;gap:16px;margin-top:14px;font-family:'IBM Plex Sans', sans-serif;font-size:11.5px;color:var(--ink-dim);
+  }
+  .cal-legend span{display:inline-flex;align-items:center;gap:6px;}
+
+  @media (max-width:600px){
+    .cal-cell{min-height:56px;}
+    .cal-chip{display:none;}
+    .cal-cell[data-has="true"] .cal-daynum::after{content:"•";color:var(--teal);margin-left:4px;}
+  }
 
 </style>
 </head>
 <body>
-<div class="preview-switch">
-  <button class="preview-btn active" id="btnDesktop" type="button">
-    <svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></svg>
-    Desktop
-  </button>
-  <button class="preview-btn" id="btnMobile" type="button">
-    <svg viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg>
-    Mobile
-  </button>
-</div>
 <div class="source-status-row">
   <div class="data-status" id="dataStatus"></div>
-</div>
-<div class="phone-shell" id="phoneShell">
-  <div class="phone-frame">
-    <iframe id="mobileFrame"></iframe>
-  </div>
 </div>
 <div class="wrap" id="mainWrap">
 
@@ -559,7 +605,18 @@
     </div>
   </div>
 
-  <div class="meta-row">
+  <div class="view-switch">
+    <button class="view-btn active" id="viewBtnList" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+      List
+    </button>
+    <button class="view-btn" id="viewBtnCalendar" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      Calendar
+    </button>
+  </div>
+
+  <div class="meta-row" id="metaRow">
     <span id="resultCount">31 vessels</span>
     <span>SORT
       <select class="sort-select" id="sortSelect">
@@ -573,6 +630,24 @@
 
   <div class="grid" id="cardGrid"></div>
   <div class="empty-state" id="emptyState" style="display:none;">ไม่พบเรือที่ตรงกับคำค้นหา</div>
+
+  <div class="calendar-view" id="calendarView" style="display:none;">
+    <div class="cal-nav">
+      <button class="cal-nav-btn" id="calPrev" type="button" aria-label="เดือนก่อนหน้า">‹</button>
+      <div class="cal-month-label" id="calMonthLabel">—</div>
+      <button class="cal-nav-btn" id="calNext" type="button" aria-label="เดือนถัดไป">›</button>
+      <button class="cal-today-btn" id="calToday" type="button">Today</button>
+    </div>
+    <div class="cal-weekdays">
+      <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
+    </div>
+    <div class="cal-grid" id="calGrid"></div>
+    <div class="cal-detail" id="calDetail" style="display:none;"></div>
+    <div class="cal-legend">
+      <span><i class="dot" style="background:var(--teal)"></i>ETA → THBKK</span>
+      <span><i class="dot" style="background:var(--amber)"></i>ETA → THLCH</span>
+    </div>
+  </div>
 
   <footer>
     <div class="legend">
@@ -935,6 +1010,7 @@ document.getElementById('searchInput').addEventListener('input', e=>{
   document.getElementById('searchBox').classList.toggle('has-text', currentQuery.length>0);
   if(currentQuery.trim()===''){ expandedVessel = null; }
   render();
+  if(currentView==='calendar') renderCalendar();
 });
 document.getElementById('searchClear').addEventListener('click', ()=>{
   const input = document.getElementById('searchInput');
@@ -944,6 +1020,7 @@ document.getElementById('searchClear').addEventListener('click', ()=>{
   document.getElementById('searchBox').classList.remove('has-text');
   input.focus();
   render();
+  if(currentView==='calendar') renderCalendar();
 });
 document.getElementById('sortSelect').addEventListener('change', e=>{
   currentSort = e.target.value;
@@ -972,41 +1049,151 @@ function updateHeader(){
   statusEl.innerHTML = 'แหล่งข้อมูล: __SOURCE_FILENAME__ (ค่าเริ่มต้น)';
 }
 
-const btnDesktop = document.getElementById('btnDesktop');
-const btnMobile = document.getElementById('btnMobile');
-const phoneShell = document.getElementById('phoneShell');
-const mainWrap = document.getElementById('mainWrap');
-const mobileFrame = document.getElementById('mobileFrame');
+// ---------- Calendar view ----------
+let currentView = 'list';
+let calMonth = new Date(NOW.getFullYear(), NOW.getMonth(), 1);
+let calSelectedDay = null;
 
-function buildMobileDoc(){
-  const clone = document.documentElement.cloneNode(true);
-  const ps = clone.querySelector('.preview-switch');
-  if(ps) ps.remove();
-  const shell = clone.querySelector('#phoneShell');
-  if(shell) shell.remove();
-  const wrap = clone.querySelector('#mainWrap');
-  if(wrap) wrap.classList.remove('hidden');
-  return '<!DOCTYPE html>\n' + clone.outerHTML;
+function fmtTime(iso){
+  const d = new Date(iso);
+  return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
 }
 
-if(btnDesktop && btnMobile && phoneShell && mainWrap && mobileFrame){
-  btnDesktop.addEventListener('click', ()=>{
-    btnDesktop.classList.add('active');
-    btnMobile.classList.remove('active');
-    phoneShell.classList.remove('active');
-    mainWrap.classList.remove('hidden');
+function buildPortCallIndex(){
+  const map = {};
+  Object.keys(VESSEL_LEGS).forEach(name=>{
+    const vObj = VESSELS.find(v=>v.vessel===name);
+    VESSEL_LEGS[name].forEach(l=>{
+      if(!l.eta || (l.pol !== 'THBKK' && l.pol !== 'THLCH')) return;
+      const d = new Date(l.eta);
+      const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+      (map[key] = map[key] || []).push({
+        vessel:name, code: vObj ? vObj.vesselCode : null,
+        port:l.pol, eta:l.eta, wharf:l.wharf,
+      });
+    });
   });
-  btnMobile.addEventListener('click', ()=>{
-    btnMobile.classList.add('active');
-    btnDesktop.classList.remove('active');
-    mainWrap.classList.add('hidden');
-    phoneShell.classList.add('active');
-    if(!mobileFrame.dataset.loaded){
-      mobileFrame.srcdoc = buildMobileDoc();
-      mobileFrame.dataset.loaded = '1';
-    }
-  });
+  Object.values(map).forEach(arr => arr.sort((a,b)=> new Date(a.eta)-new Date(b.eta)));
+  return map;
 }
+
+function filteredPortCallIndex(){
+  const idx = buildPortCallIndex();
+  const q = currentQuery.trim().toLowerCase();
+  if(!q) return idx;
+  const out = {};
+  Object.keys(idx).forEach(k=>{
+    const arr = idx[k].filter(e => e.vessel.toLowerCase().includes(q) || (e.code||'').toLowerCase().includes(q));
+    if(arr.length) out[k] = arr;
+  });
+  return out;
+}
+
+function renderCalDetail(idx){
+  const panel = document.getElementById('calDetail');
+  const entries = calSelectedDay ? (idx[calSelectedDay] || []) : [];
+  if(!entries.length){ panel.style.display='none'; panel.innerHTML=''; return; }
+  const DAYS=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+  const MONTHS=["January","February","March","April","May","June","July","August","September","October","November","December"];
+  const d = new Date(calSelectedDay+'T00:00:00');
+  panel.style.display = 'block';
+  panel.innerHTML = `
+    <div class="cal-detail-title">${DAYS[d.getDay()]}, ${MONTHS[d.getMonth()]} ${d.getDate()} — ${entries.length} port call${entries.length>1?'s':''}</div>
+    <div class="cal-detail-list">
+      ${entries.map(e => `
+        <div class="cal-detail-row">
+          <span class="cal-detail-time">${fmtTime(e.eta)}</span>
+          <span class="cal-detail-port ${e.port==='THBKK'?'port-bkk':'port-lch'}">${e.port}</span>
+          <span class="cal-detail-vessel">${escapeHtml(e.vessel)}${e.code?` <span class="v-code">${escapeHtml(e.code)}</span>`:''}</span>
+          <span class="cal-detail-wharf">${escapeHtml(wharfLabel(e.wharf))}</span>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function renderCalendar(){
+  const idx = filteredPortCallIndex();
+  const y = calMonth.getFullYear(), m = calMonth.getMonth();
+  const MONTHS=["January","February","March","April","May","June","July","August","September","October","November","December"];
+  document.getElementById('calMonthLabel').textContent = `${MONTHS[m]} ${y}`;
+
+  const startWeekday = new Date(y, m, 1).getDay();
+  const daysInMonth = new Date(y, m+1, 0).getDate();
+  const daysInPrevMonth = new Date(y, m, 0).getDate();
+
+  const cells = [];
+  for(let i=0;i<startWeekday;i++){
+    const day = daysInPrevMonth - startWeekday + 1 + i;
+    cells.push({day, y: m===0?y-1:y, m: m===0?11:m-1, out:true});
+  }
+  for(let d=1; d<=daysInMonth; d++) cells.push({day:d, y, m, out:false});
+  let nextDay = 1;
+  while(cells.length % 7 !== 0){
+    cells.push({day: nextDay++, y: m===11?y+1:y, m: m===11?0:m+1, out:true});
+  }
+
+  const todayKey = `${NOW.getFullYear()}-${String(NOW.getMonth()+1).padStart(2,'0')}-${String(NOW.getDate()).padStart(2,'0')}`;
+
+  const grid = document.getElementById('calGrid');
+  grid.innerHTML = cells.map(c => {
+    const key = `${c.y}-${String(c.m+1).padStart(2,'0')}-${String(c.day).padStart(2,'0')}`;
+    const entries = idx[key] || [];
+    const shown = entries.slice(0,3);
+    const more = entries.length - shown.length;
+    return `<div class="cal-cell ${c.out?'out':''} ${key===todayKey?'today':''} ${calSelectedDay===key?'selected':''}" data-key="${key}" data-has="${entries.length>0}">
+      <div class="cal-daynum">${c.day}</div>
+      <div class="cal-entries">
+        ${shown.map(e => `<div class="cal-chip ${e.port==='THBKK'?'port-bkk':'port-lch'}" title="${escapeHtml(e.vessel)} · ${e.port} · ${fmtTime(e.eta)}">${fmtTime(e.eta)} ${escapeHtml(e.code||e.vessel)}</div>`).join('')}
+        ${more>0 ? `<div class="cal-more">+${more} more</div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+
+  grid.querySelectorAll('.cal-cell[data-has="true"]').forEach(cell => {
+    cell.addEventListener('click', () => {
+      const key = cell.dataset.key;
+      calSelectedDay = (calSelectedDay === key) ? null : key;
+      renderCalendar();
+    });
+  });
+
+  renderCalDetail(idx);
+}
+
+document.getElementById('calPrev').addEventListener('click', () => {
+  calMonth = new Date(calMonth.getFullYear(), calMonth.getMonth()-1, 1);
+  calSelectedDay = null;
+  renderCalendar();
+});
+document.getElementById('calNext').addEventListener('click', () => {
+  calMonth = new Date(calMonth.getFullYear(), calMonth.getMonth()+1, 1);
+  calSelectedDay = null;
+  renderCalendar();
+});
+document.getElementById('calToday').addEventListener('click', () => {
+  calMonth = new Date(NOW.getFullYear(), NOW.getMonth(), 1);
+  calSelectedDay = null;
+  renderCalendar();
+});
+
+function setView(v){
+  currentView = v;
+  document.getElementById('viewBtnList').classList.toggle('active', v==='list');
+  document.getElementById('viewBtnCalendar').classList.toggle('active', v==='calendar');
+  document.getElementById('statusChips').style.display = v==='list' ? '' : 'none';
+  document.getElementById('metaRow').style.display = v==='list' ? '' : 'none';
+  document.getElementById('cardGrid').style.display = v==='list' ? '' : 'none';
+  document.getElementById('calendarView').style.display = v==='calendar' ? 'block' : 'none';
+  if(v==='list'){
+    document.getElementById('emptyState').style.display = lastRenderedList.length===0 ? 'block' : 'none';
+  } else {
+    document.getElementById('emptyState').style.display = 'none';
+    renderCalendar();
+  }
+}
+document.getElementById('viewBtnList').addEventListener('click', () => setView('list'));
+document.getElementById('viewBtnCalendar').addEventListener('click', () => setView('calendar'));
 
 updateHeader();
 render();
