@@ -483,6 +483,9 @@
   .cal-nav{
     display:flex;align-items:center;gap:10px;margin-bottom:12px;
   }
+  .cal-port-filter{margin-bottom:14px;}
+  .chip-bkk.active{background:var(--teal);border-color:var(--teal);box-shadow:0 2px 8px rgba(47,125,117,0.25);}
+  .chip-lch.active{background:var(--amber);border-color:var(--amber);color:#fff;box-shadow:0 2px 8px rgba(178,106,30,0.25);}
   .cal-nav-btn{
     width:32px;height:32px;border-radius:8px;
     border:1px solid var(--navy-line);background:var(--navy-panel);color:var(--ink-dim);
@@ -552,11 +555,6 @@
   .cal-detail-port.port-lch{background:var(--amber-soft);color:var(--amber);}
   .cal-detail-vessel{font-weight:600;color:var(--ink);flex:1 1 180px;}
   .cal-detail-wharf{color:var(--ink-dim);font-size:11.5px;}
-  .cal-legend{
-    display:flex;gap:16px;margin-top:14px;font-family:'IBM Plex Sans', sans-serif;font-size:11.5px;color:var(--ink-dim);
-  }
-  .cal-legend span{display:inline-flex;align-items:center;gap:6px;}
-
   @media (max-width:600px){
     .cal-cell{min-height:56px;}
     .cal-chip{display:none;}
@@ -638,15 +636,16 @@
       <button class="cal-nav-btn" id="calNext" type="button" aria-label="เดือนถัดไป">›</button>
       <button class="cal-today-btn" id="calToday" type="button">Today</button>
     </div>
+    <div class="chip-row cal-port-filter" id="calPortFilter">
+      <div class="chip active" data-port="all">ALL</div>
+      <div class="chip chip-bkk" data-port="THBKK">→ THBKK</div>
+      <div class="chip chip-lch" data-port="THLCH">→ THLCH</div>
+    </div>
     <div class="cal-weekdays">
       <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
     </div>
     <div class="cal-grid" id="calGrid"></div>
     <div class="cal-detail" id="calDetail" style="display:none;"></div>
-    <div class="cal-legend">
-      <span><i class="dot" style="background:var(--teal)"></i>ETA → THBKK</span>
-      <span><i class="dot" style="background:var(--amber)"></i>ETA → THLCH</span>
-    </div>
   </div>
 
   <footer>
@@ -1053,6 +1052,7 @@ function updateHeader(){
 let currentView = 'list';
 let calMonth = new Date(NOW.getFullYear(), NOW.getMonth(), 1);
 let calSelectedDay = null;
+let calPort = 'all';
 
 function fmtTime(iso){
   const d = new Date(iso);
@@ -1080,10 +1080,12 @@ function buildPortCallIndex(){
 function filteredPortCallIndex(){
   const idx = buildPortCallIndex();
   const q = currentQuery.trim().toLowerCase();
-  if(!q) return idx;
+  if(!q && calPort==='all') return idx;
   const out = {};
   Object.keys(idx).forEach(k=>{
-    const arr = idx[k].filter(e => e.vessel.toLowerCase().includes(q) || (e.code||'').toLowerCase().includes(q));
+    let arr = idx[k];
+    if(calPort !== 'all') arr = arr.filter(e => e.port === calPort);
+    if(q) arr = arr.filter(e => e.vessel.toLowerCase().includes(q) || (e.code||'').toLowerCase().includes(q));
     if(arr.length) out[k] = arr;
   });
   return out;
@@ -1175,6 +1177,15 @@ document.getElementById('calToday').addEventListener('click', () => {
   calMonth = new Date(NOW.getFullYear(), NOW.getMonth(), 1);
   calSelectedDay = null;
   renderCalendar();
+});
+document.querySelectorAll('#calPortFilter .chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    document.querySelectorAll('#calPortFilter .chip').forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+    calPort = chip.dataset.port;
+    calSelectedDay = null;
+    renderCalendar();
+  });
 });
 
 function setView(v){
