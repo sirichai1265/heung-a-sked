@@ -48,6 +48,7 @@ TEMPLATE_PATH = SCRIPT_DIR / "vessel_schedule_template.html"
 WHARF_CACHE_PATH = SCRIPT_DIR / "wharf_lookup.json"
 LOGO_PATH = SCRIPT_DIR / "logo ha.png"
 FAVICON_PATH = SCRIPT_DIR / "favicon.png"
+HEADER_BG_PATH = SCRIPT_DIR / "header-bg.jpg"
 
 # Canonical merged dataset (the current full picture) and the snapshot taken
 # just before the last update, used for the Early/Delay comparison.
@@ -60,24 +61,29 @@ SKED_PREV_PATH = SCRIPT_DIR / "sked_prev.xlsx"
 SITE_BASE_URL = "https://sirichai1265.github.io/heung-a-sked/"
 
 
-def _png_data_uri(path, warn_label):
+def _data_uri(path, warn_label, mime="image/png"):
     if not path.exists():
         print(f"[warn] {path.name} not found; {warn_label}")
         return ""
     import base64
     b64 = base64.b64encode(path.read_bytes()).decode("ascii")
-    return f"data:image/png;base64,{b64}"
+    return f"data:{mime};base64,{b64}"
 
 
 def logo_data_uri():
     """Base64 data URI for the header logo, or '' if not present."""
-    return _png_data_uri(LOGO_PATH, "header logo will be hidden")
+    return _data_uri(LOGO_PATH, "header logo will be hidden")
 
 
 def favicon_data_uri():
     """Base64 data URI for the browser-tab favicon; falls back to the logo."""
-    uri = _png_data_uri(FAVICON_PATH, "using the full logo as favicon")
+    uri = _data_uri(FAVICON_PATH, "using the full logo as favicon")
     return uri or logo_data_uri()
+
+
+def header_bg_data_uri():
+    """Base64 data URI for the header background photo, or '' if not present."""
+    return _data_uri(HEADER_BG_PATH, "header will use a flat color background", mime="image/jpeg")
 
 
 # ---------------------------------------------------------------------------
@@ -274,6 +280,7 @@ def write_dashboard(vessels, legs, changes, wharf_lookup, now, today_name, yeste
 
     html = html.replace("__LOGO_DATA_URI__", logo_data_uri())
     html = html.replace("__FAVICON_DATA_URI__", favicon_data_uri())
+    html = html.replace("__HEADER_BG_DATA_URI__", header_bg_data_uri())
     html = html.replace("__SITE_BASE_URL__", base_url if base_url.endswith("/") else base_url + "/")
     html = html.replace("__NOW_ISO__", now.isoformat())
     html = html.replace("__SCHEDULE_CHANGES_JSON__", json.dumps(changes))
