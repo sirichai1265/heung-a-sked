@@ -1,0 +1,63 @@
+name: Auto-update vessel schedule
+
+# Pulls the fleet's current rotation straight from the same backend
+# e-heunga.com's public "Schedule (Vessel)" search uses (see
+# fetch_sinokor_schedule.py for how/why), rebuilds the dashboard, and
+# pushes it -- so the site refreshes itself without anyone needing to
+# forward a SKED.xls file.
+#
+# This calls an undocumented, unauthenticated endpoint discovered by
+# inspecting e-heunga.com's own network traffic. If it starts failing,
+# that's the first thing to suspect -- the manual update.bat / drag-a-
+# file workflow still works as a fallback regardless.
+
+on:
+  schedule:
+    # 08:00, 12:00, 16:00 Bangkok time (UTC+7) = 01:00, 05:00, 09:00 UTC
+    - cron: '0 1,5,9 * * *'
+  workflow_dispatch: {}   # lets a human trigger a run manually from the Actions tab
+
+permissions:
+  contents: write
+
+concurrency:
+  group: auto-update
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install pandas openpyxl xlrd requests
+
+      - name: Pull latest schedule from the Sinokor/Heung-A API
+        id: fetch
+        run: |
+          STAMP=$(date -u +'%Y%m%d-%H%M')
+          OUT="input/auto-${STAMP}-SKED.xlsx"
+          echo "out=$OUT" >> "$GITHUB_OUTPUT"
+          python fetch_sinokor_schedule.py --out "$OUT" --months-forward 2
+
+      - name: Regenerate dashboard
+        run: |
+          python generate_vessel_schedule.py --full "${{ steps.fetch.outputs.out }}"
+          cp "Vessel Schedule.html" index.html
+
+      - name: Commit and push if anything changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "${{ steps.fetch.outputs.out }}" "Vessel Schedule.html" "Vessel Schedule.xlsx" index.html sked_current.xlsx sked_prev.xlsx
+          if git diff --cached --quiet; then
+            echo "No changes -- nothing to push"
+          else
+            git commit -m "Auto-update (full): $(basename "${{ steps.fetch.outputs.out }}" .xlsx)"
+            git push
+          fi
