@@ -1046,7 +1046,9 @@ function fmtLongDate(iso){
 }
 
 function updateHeader(){
-  document.getElementById('nowReadout').textContent = fmtLongDate(NOW.toISOString());
+  const hh=String(NOW.getHours()).padStart(2,'0');
+  const mm=String(NOW.getMinutes()).padStart(2,'0');
+  document.getElementById('nowReadout').textContent = `${fmtLongDate(NOW.toISOString())} · ${hh}:${mm}`;
   const statusEl = document.getElementById('dataStatus');
   statusEl.innerHTML = 'แหล่งข้อมูล: auto-20260924-0537-SKED.xlsx (ค่าเริ่มต้น)';
 }
