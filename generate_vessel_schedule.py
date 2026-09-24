@@ -39,11 +39,20 @@ import json
 import shutil
 import sys
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 
 import pandas as pd
 
 SCRIPT_DIR = Path(__file__).resolve().parent
+BANGKOK_TZ = timezone(timedelta(hours=7))
+
+
+def bangkok_now():
+    """Current wall-clock time in Bangkok, naive (no tzinfo) -- matches how
+    ETA/ETB/ETD are stored (naive local port time), regardless of the
+    system timezone this script happens to run under (e.g. GitHub Actions
+    runners are UTC, which would otherwise be mislabeled as Bangkok time)."""
+    return datetime.now(BANGKOK_TZ).replace(tzinfo=None)
 TEMPLATE_PATH = SCRIPT_DIR / "vessel_schedule_template.html"
 WHARF_CACHE_PATH = SCRIPT_DIR / "wharf_lookup.json"
 LOGO_PATH = SCRIPT_DIR / "logo ha.png"
@@ -480,7 +489,7 @@ def main():
     if args.full and args.merge:
         ap.error("--full and --merge are mutually exclusive")
 
-    now = datetime.fromisoformat(args.now) if args.now else datetime.now()
+    now = datetime.fromisoformat(args.now) if args.now else bangkok_now()
 
     df_today, df_yesterday, today_name, yesterday_name, src_desc = resolve_dataset(args)
 
