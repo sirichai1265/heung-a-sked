@@ -197,7 +197,12 @@ def build_vessel_summary(df, now):
         # Next port calls at either terminal in actual chronological leg
         # order (can repeat a port, e.g. THLCH -> THBKK -> THLCH), capped
         # so a vessel with many near-term calls doesn't blow up the card.
-        upcoming = fut2[fut2["POL"].isin(["THBKK", "THLCH"])].sort_values("ETA Date").head(4)
+        # Long-haul services (ANX, PCI2) space their calls a month or more
+        # apart, so showing several just clutters the card with dates far
+        # in the future -- only show the single next one for those.
+        service = g.iloc[0]["Service"]
+        tile_cap = 1 if service in ("ANX", "PCI2") else 3
+        upcoming = fut2[fut2["POL"].isin(["THBKK", "THLCH"])].sort_values("ETA Date").head(tile_cap)
         port_calls = [{
             "port": r["POL"],
             "eta": r["ETA Date"].isoformat(),
@@ -209,7 +214,7 @@ def build_vessel_summary(df, now):
         rows.append({
             "vessel": vessel,
             "vesselCode": None if pd.isna(code) else str(code).strip(),
-            "service": g.iloc[0]["Service"],
+            "service": service,
             "opLiner": g.iloc[0]["Op.Liner"],
             "status": status,
             "dockedLoc": loc, "dockedWharf": wharf,
@@ -226,6 +231,7 @@ def build_vessel_summary(df, now):
             "lchWharf": lch_row["Wharf"] if lch_row is not None else None,
             "lchVygBound": str(lch_row["Vyg Bound"]) if lch_row is not None and not pd.isna(lch_row["Vyg Bound"]) else None,
             "portCalls": port_calls,
+            "tileCap": tile_cap,
         })
     return rows
 

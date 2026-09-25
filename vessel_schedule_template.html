@@ -820,7 +820,7 @@ function portTilesInOrder(v){
     calls.push({current:true, port:v.dockedLoc, wharf:v.dockedWharf, until:v.dockedUntil, nextDest:v.dockedNextDest, vygBound:v.dockedVygBound});
   }
   (v.portCalls||[]).forEach(pc => calls.push({current:false, port:pc.port, eta:pc.eta, wharf:pc.wharf, vygBound:pc.vygBound}));
-  const capped = calls.slice(0, 4);
+  const capped = calls.slice(0, v.tileCap || 3);
   if(capped.length === 0){
     return portTile(null, null, 'ETA → THBKK / THLCH', null, null);
   }
