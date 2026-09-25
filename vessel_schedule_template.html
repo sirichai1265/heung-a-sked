@@ -325,7 +325,7 @@
   .position-line b{color:var(--ink);font-weight:600;}
   .position-line .mono-val{font-family:'IBM Plex Mono', monospace;font-size:12px;}
 
-  .ports-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .ports-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;}
   .port-tile{
     background:var(--navy-deep);
     border:1px solid var(--navy-line);
@@ -811,15 +811,23 @@ function portTile(eta, wharf, label, currentCall, vygBound){
 }
 
 function portTilesInOrder(v){
-  const bkkCall = (v.status==='docked' && v.dockedLoc==='THBKK') ? {wharf:v.dockedWharf, until:v.dockedUntil, nextDest:v.dockedNextDest, vygBound:v.dockedVygBound} : null;
-  const lchCall = (v.status==='docked' && v.dockedLoc==='THLCH') ? {wharf:v.dockedWharf, until:v.dockedUntil, nextDest:v.dockedNextDest, vygBound:v.dockedVygBound} : null;
-  const bkkTime = bkkCall ? new Date(bkkCall.until).getTime() : (v.bkkEta ? new Date(v.bkkEta).getTime() : Infinity);
-  const lchTime = lchCall ? new Date(lchCall.until).getTime() : (v.lchEta ? new Date(v.lchEta).getTime() : Infinity);
-  const bkkTile = portTile(v.bkkEta, v.bkkWharf, 'ETA → THBKK', bkkCall, v.bkkVygBound);
-  const lchTile = portTile(v.lchEta, v.lchWharf, 'ETA → THLCH', lchCall, v.lchVygBound);
-  // Show whichever port call happens sooner first, so the card reads in
-  // actual chronological order instead of always THBKK-then-THLCH.
-  return bkkTime <= lchTime ? bkkTile + lchTile : lchTile + bkkTile;
+  // Renders the vessel's actual upcoming leg sequence at THBKK/THLCH (can
+  // repeat a port, e.g. THLCH -> THBKK -> THLCH) instead of a fixed
+  // one-tile-per-port layout -- so a vessel that never calls one of the
+  // two terminals just shows the port(s) it really visits.
+  const calls = [];
+  if(v.status==='docked' && (v.dockedLoc==='THBKK' || v.dockedLoc==='THLCH')){
+    calls.push({current:true, port:v.dockedLoc, wharf:v.dockedWharf, until:v.dockedUntil, nextDest:v.dockedNextDest, vygBound:v.dockedVygBound});
+  }
+  (v.portCalls||[]).forEach(pc => calls.push({current:false, port:pc.port, eta:pc.eta, wharf:pc.wharf, vygBound:pc.vygBound}));
+  const capped = calls.slice(0, 4);
+  if(capped.length === 0){
+    return portTile(null, null, 'ETA → THBKK / THLCH', null, null);
+  }
+  return capped.map(c => c.current
+    ? portTile(null, c.wharf, `ETA → ${c.port}`, {wharf:c.wharf, until:c.until, nextDest:c.nextDest, vygBound:c.vygBound}, c.vygBound)
+    : portTile(c.eta, c.wharf, `ETA → ${c.port}`, null, c.vygBound)
+  ).join('');
 }
 
 function isSoon(v){

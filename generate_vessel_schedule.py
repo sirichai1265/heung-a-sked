@@ -194,6 +194,17 @@ def build_vessel_summary(df, now):
         bkk_row = bkk.iloc[0] if len(bkk) else None
         lch_row = lch.iloc[0] if len(lch) else None
 
+        # Next port calls at either terminal in actual chronological leg
+        # order (can repeat a port, e.g. THLCH -> THBKK -> THLCH), capped
+        # so a vessel with many near-term calls doesn't blow up the card.
+        upcoming = fut2[fut2["POL"].isin(["THBKK", "THLCH"])].sort_values("ETA Date").head(4)
+        port_calls = [{
+            "port": r["POL"],
+            "eta": r["ETA Date"].isoformat(),
+            "wharf": r["Wharf"],
+            "vygBound": None if pd.isna(r["Vyg Bound"]) else str(r["Vyg Bound"]),
+        } for _, r in upcoming.iterrows()]
+
         code = g.iloc[0]["Vessel"]
         rows.append({
             "vessel": vessel,
@@ -214,6 +225,7 @@ def build_vessel_summary(df, now):
             "lchEta": lch_row["ETA Date"].isoformat() if lch_row is not None else None,
             "lchWharf": lch_row["Wharf"] if lch_row is not None else None,
             "lchVygBound": str(lch_row["Vyg Bound"]) if lch_row is not None and not pd.isna(lch_row["Vyg Bound"]) else None,
+            "portCalls": port_calls,
         })
     return rows
 
