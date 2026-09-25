@@ -810,6 +810,18 @@ function portTile(eta, wharf, label, currentCall, vygBound){
   </div>`;
 }
 
+function portTilesInOrder(v){
+  const bkkCall = (v.status==='docked' && v.dockedLoc==='THBKK') ? {wharf:v.dockedWharf, until:v.dockedUntil, nextDest:v.dockedNextDest, vygBound:v.dockedVygBound} : null;
+  const lchCall = (v.status==='docked' && v.dockedLoc==='THLCH') ? {wharf:v.dockedWharf, until:v.dockedUntil, nextDest:v.dockedNextDest, vygBound:v.dockedVygBound} : null;
+  const bkkTime = bkkCall ? new Date(bkkCall.until).getTime() : (v.bkkEta ? new Date(v.bkkEta).getTime() : Infinity);
+  const lchTime = lchCall ? new Date(lchCall.until).getTime() : (v.lchEta ? new Date(v.lchEta).getTime() : Infinity);
+  const bkkTile = portTile(v.bkkEta, v.bkkWharf, 'ETA → THBKK', bkkCall, v.bkkVygBound);
+  const lchTile = portTile(v.lchEta, v.lchWharf, 'ETA → THLCH', lchCall, v.lchVygBound);
+  // Show whichever port call happens sooner first, so the card reads in
+  // actual chronological order instead of always THBKK-then-THLCH.
+  return bkkTime <= lchTime ? bkkTile + lchTile : lchTile + bkkTile;
+}
+
 function isSoon(v){
   const b = hoursUntil(v.bkkEta), l = hoursUntil(v.lchEta);
   return (b!==null && b<48 && b>=0) || (l!==null && l<48 && l>=0);
@@ -980,8 +992,7 @@ function render(){
       </div>
       ${positionLine(v)}
       <div class="ports-row">
-        ${portTile(v.bkkEta, v.bkkWharf, 'ETA → THBKK', (v.status==='docked' && v.dockedLoc==='THBKK') ? {wharf:v.dockedWharf, until:v.dockedUntil, nextDest:v.dockedNextDest, vygBound:v.dockedVygBound} : null, v.bkkVygBound)}
-        ${portTile(v.lchEta, v.lchWharf, 'ETA → THLCH', (v.status==='docked' && v.dockedLoc==='THLCH') ? {wharf:v.dockedWharf, until:v.dockedUntil, nextDest:v.dockedNextDest, vygBound:v.dockedVygBound} : null, v.lchVygBound)}
+        ${portTilesInOrder(v)}
       </div>
       ${cardChangeLine(v)}
       <div class="card-footer">
