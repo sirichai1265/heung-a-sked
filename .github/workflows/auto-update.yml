@@ -13,8 +13,13 @@ name: Auto-update vessel schedule
 
 on:
   schedule:
-    # 08:00, 12:00, 16:00 Bangkok time (UTC+7) = 01:00, 05:00, 09:00 UTC
-    - cron: '0 1,5,9 * * *'
+    # ~08:00, ~12:00, ~16:00 Bangkok time (UTC+7) = 01:xx, 05:xx, 09:xx UTC.
+    # Offset to minute 12 (not :00) on purpose: GitHub Actions cron jobs
+    # queue up heavily at the top of every hour since that's what most
+    # repos use, and GitHub's own docs warn this causes delayed/dropped
+    # runs -- our 01:00 slot was silently never firing for exactly this
+    # reason. Picking an off-beat minute avoids that queue.
+    - cron: '12 1,5,9 * * *'
   workflow_dispatch: {}   # lets a human trigger a run manually from the Actions tab
 
 permissions:
