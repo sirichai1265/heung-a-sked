@@ -861,6 +861,11 @@ let expandedVessel = null;
 let lastRenderedList = [];
 
 function earliestPortDate(v){
+  // A vessel currently alongside is already the most immediate case --
+  // sort it by when it arrived (always in the past), so it ranks ahead
+  // of vessels that haven't arrived at either port yet, instead of by
+  // its next future ETA (which can be its *next* rotation, weeks out).
+  if(v.status==='docked' && v.dockedSince) return new Date(v.dockedSince).getTime();
   const dates = [v.bkkEta, v.lchEta].filter(Boolean).map(d=>new Date(d).getTime());
   return dates.length ? Math.min(...dates) : Infinity;
 }
