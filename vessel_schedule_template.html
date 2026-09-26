@@ -923,6 +923,7 @@ function renderDetailPanel(vesselName){
       <td title="${escapeHtml(wharfInfo(l.wharf))}">${l.wharf||'-'}${wharfInfo(l.wharf) ? `<br><span style="font-size:9.5px;opacity:.7">${escapeHtml(wharfInfo(l.wharf))}</span>` : ''}</td>
       <td class="mono-strong">${l.pol||'-'} → ${l.pod||'-'}</td>
       <td>${fmtDateShort(l.eta)}<span class="leg-delta">${deltaHtml}</span></td>
+      <td>${fmtDateShort(l.etb)}</td>
       <td>${fmtDateShort(l.etd)}</td>
       <td>${isCurrent?'● อยู่ที่นี่ตอนนี้':(isPast?'ผ่านแล้ว':'')}</td>
     </tr>`;
@@ -933,7 +934,7 @@ function renderDetailPanel(vesselName){
     <div class="detail-scroll">
       <table class="leg-table">
         <thead><tr>
-          <th>Service</th><th>Voyage</th><th>Wharf</th><th>Route (POL → POD)</th><th>ETA</th><th>ETD</th><th>Note</th>
+          <th>Service</th><th>Voyage</th><th>Wharf</th><th>Route (POL → POD)</th><th>ETA</th><th>ETB</th><th>ETD</th><th>Note</th>
         </tr></thead>
         <tbody>${rows}</tbody>
       </table>
