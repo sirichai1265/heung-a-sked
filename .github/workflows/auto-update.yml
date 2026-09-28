@@ -65,5 +65,14 @@ jobs:
             echo "No changes -- nothing to push"
           else
             git commit -m "Auto-update (full): $(basename "${{ steps.fetch.outputs.out }}" .xlsx)"
-            git push
+            # Someone else (a colleague's manual update, or a person
+            # pushing while this run was in flight) can land a commit on
+            # main first -- retry with a rebase instead of failing the
+            # whole run, since that becomes more likely now that this
+            # runs hourly.
+            for i in 1 2 3 4 5; do
+              if git push; then break; fi
+              echo "push rejected (attempt $i), pulling --rebase and retrying..."
+              git pull --rebase origin main
+            done
           fi
