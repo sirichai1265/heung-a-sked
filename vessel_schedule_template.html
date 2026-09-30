@@ -879,7 +879,7 @@ function fmtDateShort(iso){
   const months=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
   const hh=String(d.getHours()).padStart(2,'0');
   const mm=String(d.getMinutes()).padStart(2,'0');
-  return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()+543-2500} · ${hh}:${mm}`;
+  return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()} · ${hh}:${mm}`;
 }
 
 function escapeHtml(s){
