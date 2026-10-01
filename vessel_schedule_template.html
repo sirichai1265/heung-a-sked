@@ -945,12 +945,21 @@ function findLegChange(vesselName, vygBound, pol){
   return list.find(c => c.vygBound === vygBound && c.pol === pol) || null;
 }
 
-function renderDetailPanel(vesselName){
-  const legs = VESSEL_LEGS[vesselName] || [];
+function renderDetailPanel(vesselName, hidePast){
+  let legs = VESSEL_LEGS[vesselName] || [];
+  if(hidePast){
+    legs = legs.filter(l => {
+      const etdTime = l.etd ? new Date(l.etd).getTime() : null;
+      return etdTime === null || etdTime >= NOW.getTime();
+    });
+  }
   const code = (VESSELS.find(v=>v.vessel===vesselName)||{}).vesselCode;
   const nameLabel = code ? `${vesselName} (${code})` : vesselName;
   if(legs.length === 0){
-    return `<div class="detail-panel"><div class="detail-title">Full Schedule — ${nameLabel}</div><p style="color:var(--ink-dim);font-family:'IBM Plex Mono',monospace;font-size:12px;">ไม่มีข้อมูลรายละเอียดของเรือลำนี้ในไฟล์</p></div>`;
+    const msg = (hidePast && (VESSEL_LEGS[vesselName]||[]).length > 0)
+      ? 'ไม่มีกำหนดการที่กำลังจะถึง (ตารางทั้งหมดผ่านไปแล้ว)'
+      : 'ไม่มีข้อมูลรายละเอียดของเรือลำนี้ในไฟล์';
+    return `<div class="detail-panel"><div class="detail-title">Full Schedule — ${nameLabel}</div><p style="color:var(--ink-dim);font-family:'IBM Plex Mono',monospace;font-size:12px;">${msg}</p></div>`;
   }
   const rows = legs.map(l=>{
     const etaTime = l.eta ? new Date(l.eta).getTime() : null;
@@ -1290,7 +1299,7 @@ function renderSummary(){
   document.getElementById('summaryBody').innerHTML = list.map(v => {
     const expanded = expandedVessel === v.vessel;
     const detailRow = expanded
-      ? `<tr class="summary-detail-row"><td colspan="5">${renderDetailPanel(v.vessel)}</td></tr>`
+      ? `<tr class="summary-detail-row"><td colspan="5">${renderDetailPanel(v.vessel, true)}</td></tr>`
       : '';
     return `
     <tr class="summary-row${expanded?' expanded':''}" data-vessel="${v.vessel.replace(/"/g,'&quot;')}">
