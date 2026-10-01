@@ -487,6 +487,12 @@
   table.summary-table{min-width:560px;}
   table.summary-table .status-pill{margin:0;}
   .summary-loc-wharf{opacity:.75;font-size:10px;}
+  .summary-row{cursor:pointer;}
+  .summary-row:hover td{background:rgba(79,163,154,0.06);}
+  .summary-row.expanded td{background:rgba(79,163,154,0.10);}
+  .summary-row .summary-vessel-link{color:var(--teal);text-decoration:underline;text-decoration-style:dotted;text-underline-offset:2px;}
+  .summary-detail-row td{padding:0;border-bottom:1px solid rgba(16,32,48,0.07);}
+  .summary-detail-row .detail-panel{margin-top:0;border:none;border-radius:0;box-shadow:none;background:transparent;animation:none;padding:4px 14px 14px;}
 
   .calendar-view{margin-top:4px;}
   .cal-nav{
@@ -1281,15 +1287,34 @@ function renderSummary(){
     ? list.slice().sort((a,b)=> a.vessel.localeCompare(b.vessel))
     : list.slice().sort((a,b)=> earliestPortDate(a) - earliestPortDate(b));
   document.getElementById('summaryCount').textContent = `${list.length} vessels`;
-  document.getElementById('summaryBody').innerHTML = list.map(v => `
-    <tr>
-      <td class="mono-strong">${escapeHtml(v.vessel)}${v.vesselCode ? ` <span style="opacity:.6">(${escapeHtml(v.vesselCode)})</span>` : ''}</td>
+  document.getElementById('summaryBody').innerHTML = list.map(v => {
+    const expanded = expandedVessel === v.vessel;
+    const detailRow = expanded
+      ? `<tr class="summary-detail-row"><td colspan="5">${renderDetailPanel(v.vessel)}</td></tr>`
+      : '';
+    return `
+    <tr class="summary-row${expanded?' expanded':''}" data-vessel="${v.vessel.replace(/"/g,'&quot;')}">
+      <td class="mono-strong summary-vessel-link">${escapeHtml(v.vessel)}${v.vesselCode ? ` <span style="opacity:.6">(${escapeHtml(v.vesselCode)})</span>` : ''}</td>
       <td>${escapeHtml(v.service||'-')}</td>
       <td>${statusPill(v)}</td>
       <td>${summaryLocationText(v)}</td>
       <td>${summarySinceEtaText(v)}</td>
     </tr>
-  `).join('');
+    ${detailRow}`;
+  }).join('');
+  document.querySelectorAll('#summaryBody .summary-row').forEach(row=>{
+    row.addEventListener('click', ()=>{
+      const name = row.dataset.vessel;
+      expandedVessel = (expandedVessel === name) ? null : name;
+      renderSummary();
+      if(expandedVessel){
+        setTimeout(()=>{
+          const el = document.querySelector('#summaryBody .summary-row.expanded');
+          if(el) el.scrollIntoView({behavior:'smooth', block:'nearest'});
+        }, 30);
+      }
+    });
+  });
 }
 document.getElementById('summarySortSelect').addEventListener('change', e=>{
   summarySort = e.target.value;
