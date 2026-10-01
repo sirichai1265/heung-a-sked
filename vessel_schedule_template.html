@@ -666,7 +666,7 @@
       <span id="summaryCount">31 vessels</span>
       <span>SORT
         <select class="sort-select" id="summarySortSelect">
-          <option value="location" selected>ตำแหน่ง (TH ก่อน)</option>
+          <option value="location" selected>Location (TH first)</option>
           <option value="name">A–Z</option>
         </select>
       </span>
@@ -1267,8 +1267,8 @@ function summaryLocationText(v){
 }
 
 function summarySinceEtaText(v){
-  if(v.status === 'docked') return v.dockedSince ? `ตั้งแต่ ${fmtDate(v.dockedSince)}` : '—';
-  if(v.status === 'transit') return v.transitEta ? `คาดถึง ${fmtDate(v.transitEta)}` : '—';
+  if(v.status === 'docked') return v.dockedSince ? `Since ${fmtDate(v.dockedSince)}` : '—';
+  if(v.status === 'transit') return v.transitEta ? `ETA ${fmtDate(v.transitEta)}` : '—';
   return '—';
 }
 
