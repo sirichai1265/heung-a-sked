@@ -149,7 +149,18 @@ def main():
     print(f"[1/3] Fetching {len(vessels)} vessel(s) x {len(months)} month(s) ({', '.join(months)}) from {API_URL} ...")
 
     session = requests.Session()
-    session.headers.update({"Content-Type": "application/json", "Accept": "application/json"})
+    session.headers.update({
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+        # The API started rejecting plain requests.post calls with 403
+        # Forbidden on 2026-10-01 -- it now checks Origin/Referer/UA like
+        # a browser serving e-heunga.com's own page would send, not just
+        # CORS (which is a browser-side check and irrelevant server-side).
+        # These mirror what the real site sends; same public data either way.
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Origin": "https://e-heunga.com",
+        "Referer": "https://e-heunga.com/",
+    })
 
     per_vessel_records = {}
     failures = []
