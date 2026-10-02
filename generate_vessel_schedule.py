@@ -292,6 +292,34 @@ def build_schedule_changes(df_old, df_new):
 # HTML dashboard output
 # ---------------------------------------------------------------------------
 
+def build_sea_routes(legs, port_coords):
+    """{"POL>NEXTPOL": [[lon, lat], ...]} for every consecutive port-call
+    pair in any vessel's rotation, routed along real shipping lanes via
+    the `searoute` package. Returns {} (maps fall back to straight lines)
+    if searoute isn't installed."""
+    try:
+        import searoute
+    except ImportError:
+        print("[warn] searoute not installed -- route maps will use straight lines "
+              "(pip install searoute)")
+        return {}
+    pairs = set()
+    for ls in legs.values():
+        calls = [l["pol"] for l in sorted(ls, key=lambda l: l["eta"] or "")
+                 if l["eta"] and l["pol"] in port_coords]
+        pairs.update((a, b) for a, b in zip(calls, calls[1:]) if a != b)
+    routes = {}
+    for a, b in sorted(pairs):
+        ca, cb = port_coords[a], port_coords[b]
+        try:
+            line = searoute.searoute([ca["lon"], ca["lat"]], [cb["lon"], cb["lat"]], append_orig_dest=True)
+        except Exception as e:
+            print(f"[warn] no sea route {a} -> {b} ({e}); using a straight line")
+            continue
+        routes[f"{a}>{b}"] = [[round(x, 2), round(y, 2)] for x, y in line["geometry"]["coordinates"]]
+    return routes
+
+
 def write_dashboard(vessels, legs, changes, wharf_lookup, now, today_name, yesterday_name, outdir, base_url=SITE_BASE_URL):
     if not TEMPLATE_PATH.exists():
         print(f"[error] template not found at {TEMPLATE_PATH}. Keep "
@@ -323,6 +351,7 @@ def write_dashboard(vessels, legs, changes, wharf_lookup, now, today_name, yeste
         print(f"[warn] {len(missing_ports)} port code(s) missing from {PORT_COORDS_PATH.name} "
               f"(won't appear on route maps): {missing_ports}")
     html = html.replace("__PORT_COORDS_JSON__", json.dumps(port_coords, ensure_ascii=False))
+    html = html.replace("__SEA_ROUTES_JSON__", json.dumps(build_sea_routes(legs, port_coords), separators=(",", ":")))
     html = html.replace("__SOURCE_LABEL__", source_label)
     html = html.replace("__SOURCE_FILENAME__", today_name)
 

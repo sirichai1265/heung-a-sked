@@ -41,7 +41,7 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: pip install pandas openpyxl xlrd requests
+        run: pip install pandas openpyxl xlrd requests searoute
 
       - name: Pull latest schedule from the Sinokor/Heung-A API
         id: fetch
