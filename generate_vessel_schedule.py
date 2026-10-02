@@ -55,6 +55,7 @@ def bangkok_now():
     return datetime.now(BANGKOK_TZ).replace(tzinfo=None)
 TEMPLATE_PATH = SCRIPT_DIR / "vessel_schedule_template.html"
 WHARF_CACHE_PATH = SCRIPT_DIR / "wharf_lookup.json"
+PORT_COORDS_PATH = SCRIPT_DIR / "port_coords.json"
 LOGO_PATH = SCRIPT_DIR / "logo ha.png"
 FAVICON_PATH = SCRIPT_DIR / "favicon.png"
 HEADER_BG_PATH = SCRIPT_DIR / "header-bg.jpg"
@@ -314,6 +315,14 @@ def write_dashboard(vessels, legs, changes, wharf_lookup, now, today_name, yeste
     html = html.replace("__LEGS_JSON__", json.dumps(legs))
     html = html.replace("__VESSELS_JSON__", json.dumps(vessels))
     html = html.replace("__WHARF_LOOKUP_JSON__", json.dumps(wharf_lookup, ensure_ascii=False))
+
+    port_coords = json.loads(PORT_COORDS_PATH.read_text(encoding="utf-8")) if PORT_COORDS_PATH.exists() else {}
+    used_ports = {p for ls in legs.values() for l in ls for p in (l["pol"], l["pod"]) if isinstance(p, str)}
+    missing_ports = sorted(used_ports - port_coords.keys())
+    if missing_ports:
+        print(f"[warn] {len(missing_ports)} port code(s) missing from {PORT_COORDS_PATH.name} "
+              f"(won't appear on route maps): {missing_ports}")
+    html = html.replace("__PORT_COORDS_JSON__", json.dumps(port_coords, ensure_ascii=False))
     html = html.replace("__SOURCE_LABEL__", source_label)
     html = html.replace("__SOURCE_FILENAME__", today_name)
 

@@ -20,6 +20,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <style>
   :root{
     --navy-deep:#EEF2F6;
@@ -373,6 +375,20 @@
     color:var(--teal);text-transform:uppercase;margin:2px 0 10px;
   }
   .detail-scroll{max-height:340px;overflow-y:auto;overflow-x:auto;border-radius:6px;}
+  .leg-map-wrap{margin-bottom:12px;}
+  .leg-map{height:340px;border-radius:10px;border:1px solid var(--navy-line);overflow:hidden;background:#E8EEF2;z-index:0;}
+  .leg-map-legend{
+    display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:6px;
+    font-family:'IBM Plex Sans', sans-serif;font-size:11px;color:var(--ink-dim);align-items:center;
+  }
+  .leg-map-legend span{display:inline-flex;align-items:center;gap:6px;}
+  .lm-line{display:inline-block;width:20px;height:0;border-top:3px solid var(--teal);}
+  .lm-line.lm-past{border-top:2px dashed var(--paper-dim);}
+  .lm-dot{display:inline-block;width:10px;height:10px;border-radius:50%;}
+  .lm-dot.lm-th{background:#E8A04A;border:2px solid var(--amber);}
+  .lm-dot.lm-ship{background:#D9534F;border:2px solid #fff;box-shadow:0 0 0 1px #D9534F;}
+  .lm-note{font-style:italic;opacity:.75;}
+  @media (max-width:600px){ .leg-map{height:240px;} }
   table.leg-table{width:100%;min-width:640px;border-collapse:collapse;font-family:'IBM Plex Mono', monospace;font-size:11.5px;}
   table.leg-table th{
     position:sticky;top:0;background:var(--navy-panel);color:var(--ink-dim);
@@ -719,6 +735,7 @@ let NOW = DEFAULT_NOW;
 let VESSELS = DEFAULT_VESSELS;
 let VESSEL_LEGS = DEFAULT_LEGS;
 const WHARF_LOOKUP = __WHARF_LOOKUP_JSON__;
+const PORT_COORDS = __PORT_COORDS_JSON__;
 
 function fmtDate(iso){
   if(!iso) return null;
@@ -991,6 +1008,16 @@ function renderDetailPanel(vesselName, hidePast){
 
   return `<div class="detail-panel">
     <div class="detail-title">Full Schedule — ${nameLabel} (${legs.length} legs)</div>
+    <div class="leg-map-wrap">
+      <div class="leg-map" data-vessel="${escapeHtml(vesselName)}" data-hide-past="${hidePast?1:0}"></div>
+      <div class="leg-map-legend">
+        <span><i class="lm-line lm-past"></i>Past</span>
+        <span><i class="lm-line lm-next"></i>Upcoming</span>
+        <span><i class="lm-dot lm-th"></i>THBKK / THLCH</span>
+        <span><i class="lm-dot lm-ship"></i>Est. position now</span>
+        <span class="lm-note">Straight lines between ports, not actual sea routes</span>
+      </div>
+    </div>
     <div class="detail-scroll">
       <table class="leg-table">
         <thead><tr>
@@ -1000,6 +1027,109 @@ function renderDetailPanel(vesselName, hidePast){
       </table>
     </div>
   </div>`;
+}
+
+// ---------- Route map (Full Schedule panel) ----------
+const MAP_COLORS = {past:'#93A2AE', next:'#2F7D75', th:'#B26A1E', thFill:'#E8A04A', port:'#2F7D75', portFill:'#4FA39A', ship:'#D9534F'};
+
+// Shift lon by ±360 so each hop takes the short way round -- a Pacific
+// crossing (e.g. to MXZLO) would otherwise draw right across the map.
+function unwrapLon(lon, prevLon){
+  if(prevLon === null) return lon;
+  while(lon - prevLon > 180) lon -= 360;
+  while(lon - prevLon < -180) lon += 360;
+  return lon;
+}
+
+function routePoints(vesselName){
+  const legs = (VESSEL_LEGS[vesselName] || [])
+    .filter(l => l.eta && PORT_COORDS[l.pol])
+    .slice().sort((a,b)=> new Date(a.eta) - new Date(b.eta));
+  let prev = null;
+  return legs.map(l => {
+    const c = PORT_COORDS[l.pol];
+    const lon = unwrapLon(c.lon, prev); prev = lon;
+    return {leg:l, port:l.pol, lat:c.lat, lon,
+            eta:new Date(l.eta).getTime(), etd:l.etd ? new Date(l.etd).getTime() : null};
+  });
+}
+
+function estimatePosition(pts, nowT){
+  for(const p of pts){
+    if(p.eta <= nowT && p.etd !== null && p.etd >= nowT) return {lat:p.lat, lon:p.lon, label:`Alongside ${p.port}`};
+  }
+  for(let i=0;i<pts.length-1;i++){
+    const a = pts[i], b = pts[i+1];
+    const dep = a.etd !== null ? a.etd : a.eta;
+    if(dep <= nowT && b.eta > nowT){
+      const f = (nowT - dep) / Math.max(1, b.eta - dep);
+      return {lat:a.lat + (b.lat-a.lat)*f, lon:a.lon + (b.lon-a.lon)*f, label:`Sailing ${a.port} → ${b.port} (est.)`, sailingTo:i+1};
+    }
+  }
+  return null;
+}
+
+function initLegMaps(){
+  document.querySelectorAll('.leg-map:not([data-init])').forEach(el => {
+    // Leaflet can't size itself inside a hidden view; setView() retries.
+    if(el.clientWidth === 0) return;
+    el.dataset.init = '1';
+    const wrap = el.closest('.leg-map-wrap');
+    if(!window.L){ wrap.style.display = 'none'; return; }
+    const nowT = NOW.getTime();
+    const allPts = routePoints(el.dataset.vessel);
+    const pos = estimatePosition(allPts, nowT);
+    const pts = el.dataset.hidePast === '1'
+      ? allPts.filter(p => p.etd === null || p.etd >= nowT)
+      : allPts;
+    if(!pts.length){ wrap.style.display = 'none'; return; }
+
+    const map = L.map(el, {scrollWheelZoom:false, zoomSnap:0.25});
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom:10, attribution:'&copy; OpenStreetMap contributors',
+    }).addTo(map);
+
+    for(let i=0;i<pts.length-1;i++){
+      const a = pts[i], b = pts[i+1];
+      const past = b.eta < nowT;
+      L.polyline([[a.lat,a.lon],[b.lat,b.lon]], past
+        ? {color:MAP_COLORS.past, weight:2, opacity:.8, dashArray:'4 6'}
+        : {color:MAP_COLORS.next, weight:3, opacity:.9}).addTo(map);
+    }
+    // With past legs hidden, still connect "where it is now" to its next port.
+    if(pos && pos.sailingTo !== undefined && pts[0] === allPts[pos.sailingTo]){
+      L.polyline([[pos.lat,pos.lon],[pts[0].lat,pts[0].lon]], {color:MAP_COLORS.next, weight:3, opacity:.9}).addTo(map);
+    }
+
+    const groups = {};
+    pts.forEach(p => {
+      const k = `${p.port}@${p.lon.toFixed(2)}`;
+      (groups[k] = groups[k] || []).push(p);
+    });
+    Object.values(groups).forEach(calls => {
+      const p = calls[0];
+      const isTH = p.port === 'THBKK' || p.port === 'THLCH';
+      const allPast = calls.every(c => c.etd !== null && c.etd < nowT);
+      const lines = calls.map(c =>
+        `${escapeHtml(c.leg.vygBound||'-')} · ETA ${fmtDate(c.leg.eta)}${c.leg.etd ? ` · ETD ${fmtDate(c.leg.etd)}` : ''}`
+      ).join('<br>');
+      L.circleMarker([p.lat,p.lon], {
+        radius: isTH ? 7 : 5, weight: 2, fillOpacity: .95,
+        color: isTH ? MAP_COLORS.th : (allPast ? MAP_COLORS.past : MAP_COLORS.port),
+        fillColor: isTH ? MAP_COLORS.thFill : (allPast ? '#D6DEE6' : MAP_COLORS.portFill),
+      }).addTo(map).bindTooltip(
+        `<b>${p.port}</b> ${escapeHtml(PORT_COORDS[p.port].name)}<br>${lines}`, {direction:'top'});
+    });
+
+    if(pos){
+      L.circleMarker([pos.lat,pos.lon], {radius:8, color:'#fff', weight:3, fillColor:MAP_COLORS.ship, fillOpacity:1})
+        .addTo(map).bindTooltip(escapeHtml(pos.label), {direction:'top'});
+    }
+
+    const bounds = L.latLngBounds(pts.map(p => [p.lat,p.lon]));
+    if(pos) bounds.extend([pos.lat,pos.lon]);
+    map.fitBounds(bounds, {padding:[28,28], maxZoom:7});
+  });
 }
 
 function render(){
@@ -1085,6 +1215,7 @@ function render(){
       }
     });
   });
+  initLegMaps();
 }
 
 document.getElementById('searchInput').addEventListener('input', e=>{
@@ -1334,6 +1465,7 @@ function renderSummary(){
       }
     });
   });
+  initLegMaps();
 }
 document.getElementById('summarySortSelect').addEventListener('change', e=>{
   summarySort = e.target.value;
@@ -1357,6 +1489,7 @@ function setView(v){
     if(v==='calendar') renderCalendar();
     if(v==='summary') renderSummary();
   }
+  initLegMaps();
 }
 document.getElementById('viewBtnList').addEventListener('click', () => setView('list'));
 document.getElementById('viewBtnCalendar').addEventListener('click', () => setView('calendar'));
