@@ -548,6 +548,7 @@
   }
   .cal-chip.port-bkk{background:var(--teal-soft);color:var(--teal);}
   .cal-chip.port-lch{background:var(--amber-soft);color:var(--amber);}
+  .cal-chip-vyg{opacity:.7;}
   .cal-more{font-family:'IBM Plex Mono', monospace;font-size:9px;color:var(--ink-dim);padding-left:5px;}
   .cal-detail{
     margin-top:14px;background:var(--navy-panel);border:1px solid var(--navy-line);border-radius:10px;
@@ -681,7 +682,7 @@
     <div class="summary-scroll">
       <table class="leg-table summary-table">
         <thead><tr>
-          <th>Vessel</th><th>Service</th><th>Voyage</th><th>Status</th><th>Location</th><th>Since / ETA</th>
+          <th>Vessel</th><th>Voyage</th><th>Service</th><th>Status</th><th>Location</th><th>Since / ETA</th>
         </tr></thead>
         <tbody id="summaryBody"></tbody>
       </table>
@@ -1228,7 +1229,7 @@ function renderCalendar(){
     return `<div class="cal-cell ${c.out?'out':''} ${key===todayKey?'today':''} ${calSelectedDay===key?'selected':''}" data-key="${key}" data-has="${entries.length>0}">
       <div class="cal-daynum">${c.day}</div>
       <div class="cal-entries">
-        ${shown.map(e => `<div class="cal-chip ${e.port==='THBKK'?'port-bkk':'port-lch'}" title="${escapeHtml(e.vessel)} · ${e.vygBound?escapeHtml(e.vygBound)+' · ':''}${e.port} · ${fmtTime(e.eta)}">${fmtTime(e.eta)} ${escapeHtml(e.code||e.vessel)}</div>`).join('')}
+        ${shown.map(e => `<div class="cal-chip ${e.port==='THBKK'?'port-bkk':'port-lch'}" title="${escapeHtml(e.vessel)} · ${e.vygBound?escapeHtml(e.vygBound)+' · ':''}${e.port} · ${fmtTime(e.eta)}">${fmtTime(e.eta)} ${escapeHtml(e.code||e.vessel)}${e.vygBound?` <span class="cal-chip-vyg">${escapeHtml(e.vygBound)}</span>`:''}</div>`).join('')}
         ${more>0 ? `<div class="cal-more">+${more} more</div>` : ''}
       </div>
     </div>`;
@@ -1307,8 +1308,8 @@ function renderSummary(){
     return `
     <tr class="summary-row${expanded?' expanded':''}" data-vessel="${v.vessel.replace(/"/g,'&quot;')}">
       <td class="mono-strong summary-vessel-link">${escapeHtml(v.vessel)}${v.vesselCode ? ` <span style="opacity:.6">(${escapeHtml(v.vesselCode)})</span>` : ''}</td>
-      <td>${escapeHtml(v.service||'-')}</td>
       <td class="mono-strong">${voyage?escapeHtml(voyage):'-'}</td>
+      <td>${escapeHtml(v.service||'-')}</td>
       <td>${statusPill(v)}</td>
       <td>${summaryLocationText(v)}</td>
       <td>${summarySinceEtaText(v)}</td>
