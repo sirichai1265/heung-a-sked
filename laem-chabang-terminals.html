@@ -1,0 +1,464 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Laem Chabang Terminal Links</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@500;600;700&family=Big+Shoulders+Stencil+Display:wght@800&family=IBM+Plex+Sans+Thai:wght@400;500;600&family=JetBrains+Mono:wght@600;700&display=swap">
+<style>
+/* Layout: sunny harbour hero (ship + gantry cranes + waves), pier map by basin, then terminal cards styled as shipping containers.
+   Deliberately a single bright theme, as requested. */
+:root {
+  --sky-top: #a9dcff;
+  --sky-bot: #e9f7ff;
+  --sea: #2a93d8;
+  --sea-deep: #136aa8;
+  --bg: #f2f9fd;
+  --paper: #ffffff;
+  --ink: #0f2b40;
+  --muted: #4e6a7c;
+  --line: #d4e4ee;
+  --concrete: #e7ecef;
+  --hazard: #ffc21a;
+  --hazard-dark: #1f2a33;
+  --c-lcmt: #ea6a2a;
+  --c-hpt: #1f6fc0;
+  --c-esco: #1d9b72;
+  --c-lcit: #c9363c;
+  --display: "Bai Jamjuree", "IBM Plex Sans Thai", system-ui, sans-serif;
+  --body: "IBM Plex Sans Thai", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  --stencil: "Big Shoulders Stencil Display", "Bai Jamjuree", Impact, sans-serif;
+  color-scheme: light;
+}
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 16px; line-height: 1.55; }
+a:focus-visible, button:focus-visible, input:focus-visible { outline: 3px solid var(--hazard); outline-offset: 2px; }
+
+/* ---------- Hero ---------- */
+.hero { background: linear-gradient(180deg, var(--sky-top), var(--sky-bot) 78%); position: relative; overflow: hidden; }
+.hero-text {
+  max-width: 1080px; margin: 0 auto; padding-inline: 20px; padding-block: 30px 0;
+  display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap; align-items: flex-start;
+  position: relative; z-index: 1;
+}
+.hero-copy { display: grid; gap: 6px; min-width: 0; flex: 1 1 420px; }
+.eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--sea-deep); }
+h1 { font-family: var(--display); font-weight: 700; font-size: clamp(26px, 4.6vw, 42px); line-height: 1.18; margin: 0; text-wrap: balance; }
+.lede { margin: 0; color: var(--muted); max-width: 60ch; }
+.clock {
+  background: rgba(255,255,255,.75); border: 1px solid rgba(255,255,255,.9); border-radius: 12px;
+  padding: 10px 14px; display: grid; gap: 2px; min-width: 170px; backdrop-filter: blur(4px);
+}
+.clock-label { font-size: 12px; color: var(--muted); }
+.clock-time { font-family: var(--mono); font-weight: 700; font-size: 24px; font-variant-numeric: tabular-nums; color: var(--ink); }
+.clock-date { font-size: 13px; color: var(--muted); }
+.hero-side { display: grid; gap: 10px; justify-items: end; }
+.lang { display: inline-flex; background: rgba(255,255,255,.75); border: 1px solid rgba(255,255,255,.9); border-radius: 999px; padding: 3px; }
+.lang a { font-family: var(--mono); font-weight: 700; font-size: 13px; color: var(--muted); text-decoration: none; padding: 4px 12px; border-radius: 999px; }
+.lang a[aria-current="page"] { background: var(--sea-deep); color: #fff; }
+.lang a:not([aria-current]):hover { color: var(--ink); }
+.scene { display: block; width: 100%; height: clamp(170px, 26vw, 280px); margin-top: -10px; }
+
+/* scene animation */
+.sail { animation: sail 48s linear infinite; }
+.bob { animation: bob 3.2s ease-in-out infinite; }
+.wave-a { animation: drift 22s linear infinite; }
+.wave-b { animation: drift 14s linear infinite reverse; }
+.wave-c { animation: drift 9s linear infinite; }
+.cloud { animation: cloud 70s linear infinite; }
+.cloud.slow { animation-duration: 110s; }
+.trolley { animation: trolley 7s ease-in-out infinite; }
+.trolley.t2 { animation-delay: -3.5s; }
+.gull { animation: gull 2.4s ease-in-out infinite; }
+@keyframes sail { 0% { transform: translateX(-360px); opacity: 0 } 6% { opacity: 1 } 88% { opacity: 1 } 100% { transform: translateX(700px); opacity: 0 } }
+@keyframes bob { 0%,100% { transform: translateY(0) rotate(0deg) } 50% { transform: translateY(3px) rotate(.4deg) } }
+@keyframes drift { from { transform: translateX(0) } to { transform: translateX(-1600px) } }
+@keyframes cloud { from { transform: translateX(0) } to { transform: translateX(-1800px) } }
+@keyframes trolley { 0%,100% { transform: translateX(0) } 50% { transform: translateX(-150px) } }
+@keyframes gull { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-5px) } }
+
+/* ---------- Page ---------- */
+.wrap { max-width: 1080px; margin: 0 auto; padding-inline: 20px; padding-block: 28px 40px; display: grid; gap: 30px; }
+.section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+h2.section { font-family: var(--display); font-size: 20px; margin: 0; }
+.hint { font-size: 14px; color: var(--muted); }
+
+/* Pier map */
+.harbour {
+  background:
+    radial-gradient(circle at 20% 30%, rgba(255,255,255,.18) 0 2px, transparent 3px) 0 0 / 34px 26px,
+    linear-gradient(180deg, var(--sea), var(--sea-deep));
+  border-radius: 16px; padding: 18px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px;
+}
+.pier { background: var(--concrete); border-radius: 6px; overflow: hidden; display: grid; align-content: start; box-shadow: 0 6px 0 rgba(0,0,0,.12); }
+.pier::before { content: ""; height: 8px; background: repeating-linear-gradient(-45deg, var(--hazard) 0 10px, var(--hazard-dark) 10px 20px); }
+.pier-body { padding: 12px 14px 16px; display: grid; gap: 10px; }
+.pier-name { font-family: var(--mono); font-size: 12px; letter-spacing: .1em; color: var(--muted); }
+.berths { display: flex; flex-wrap: wrap; gap: 10px; }
+.berth {
+  display: inline-flex; align-items: center; gap: 8px; text-decoration: none;
+  background: var(--paper); color: var(--ink); border: 2px solid var(--c); border-radius: 999px;
+  padding: 4px 12px 4px 5px; font-weight: 600; font-size: 14px;
+}
+.berth b { font-family: var(--mono); background: var(--c); color: #fff; border-radius: 999px; padding: 1px 8px; font-size: 13px; }
+.berth:hover { background: var(--c); color: #fff; }
+
+/* Search */
+.search { position: relative; max-width: 520px; width: 100%; }
+.search svg { position: absolute; left: 14px; top: 50%; translate: 0 -50%; width: 20px; height: 20px; color: var(--sea-deep); pointer-events: none; }
+.search input {
+  width: 100%; font: inherit; color: var(--ink); background: var(--paper);
+  border: 2px solid var(--line); border-radius: 12px; padding: 12px 14px 12px 44px;
+}
+.search input:focus { border-color: var(--sea); outline: none; box-shadow: 0 0 0 4px rgba(42,147,216,.18); }
+.count { font-size: 14px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+/* Container cards */
+.grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; }
+.card {
+  background: var(--paper); border-radius: 8px; overflow: hidden; display: grid; align-content: start;
+  border: 1px solid var(--line); box-shadow: 0 2px 0 rgba(15,43,64,.06);
+  scroll-margin-top: 20px;
+}
+.box {
+  position: relative; color: #fff; padding: 18px 22px 16px;
+  background:
+    repeating-linear-gradient(90deg, rgba(255,255,255,.0) 0 14px, rgba(255,255,255,.13) 14px 18px, rgba(0,0,0,.08) 18px 22px),
+    var(--c);
+  display: flex; justify-content: space-between; align-items: flex-end; gap: 12px;
+}
+.box::before, .box::after {
+  content: ""; position: absolute; top: 6px; width: 12px; height: 9px; border-radius: 2px;
+  background: rgba(0,0,0,.25); box-shadow: inset 0 0 0 2px rgba(255,255,255,.25);
+}
+.box::before { left: 6px; } .box::after { right: 6px; }
+.stencil { font-family: var(--stencil); font-weight: 800; font-size: 48px; line-height: .9; letter-spacing: .04em; margin: 0; }
+.marking { font-family: var(--mono); font-size: 12px; text-align: right; line-height: 1.35; opacity: .95; }
+.marking strong { display: block; font-size: 18px; }
+.content { padding: 18px 22px 22px; display: grid; gap: 12px; }
+.fullname { margin: 0; font-weight: 600; font-size: 17px; }
+.desc { margin: 0; color: var(--muted); font-size: 15px; }
+.info { margin: 0; display: grid; gap: 8px; padding: 12px 14px; background: var(--bg); border-radius: 10px; }
+.info div { display: grid; grid-template-columns: 76px minmax(0, 1fr); gap: 10px; align-items: center; }
+.info dt { font-size: 13px; color: var(--muted); }
+.info dd { margin: 0; min-width: 0; }
+.url { font-family: var(--mono); font-size: 13px; color: var(--ink); overflow-wrap: anywhere; }
+.tel { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.tel a { font-family: var(--mono); font-weight: 700; font-size: 18px; color: var(--sea-deep); text-decoration: none; font-variant-numeric: tabular-nums; letter-spacing: .02em; }
+.tel a:hover { text-decoration: underline; }
+.mini { font: inherit; font-size: 12px; color: var(--muted); background: var(--paper); border: 1px solid var(--line); border-radius: 6px; padding: 2px 8px; cursor: pointer; }
+.mini:hover { border-color: var(--sea); color: var(--ink); }
+.actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.btn {
+  font: inherit; font-weight: 600; font-size: 15px; display: inline-flex; align-items: center; gap: 8px;
+  padding: 10px 16px; border-radius: 10px; text-decoration: none; cursor: pointer; border: 2px solid transparent;
+}
+.btn svg { width: 16px; height: 16px; }
+.btn-primary { background: var(--c); color: #fff; }
+.btn-primary:hover { filter: brightness(1.08); }
+.btn-gate { background: var(--hazard); color: var(--hazard-dark); }
+.btn-gate:hover { filter: brightness(1.05); }
+.btn-ghost { background: var(--paper); color: var(--ink); border-color: var(--line); }
+.btn-ghost:hover { border-color: var(--c); }
+.card:target { outline: 3px solid var(--hazard); outline-offset: 3px; }
+.empty { color: var(--muted); padding: 24px; text-align: center; border: 2px dashed var(--line); border-radius: 14px; margin: 0; }
+
+/* Footer */
+footer { background: var(--sea-deep); color: #d9eefc; }
+footer .waves { display: block; width: 100%; height: 36px; background: var(--bg); }
+footer .inner { max-width: 1080px; margin: 0 auto; padding-inline: 20px; padding-block: 18px 28px; font-size: 14px; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+footer a { color: #fff; }
+
+@media (max-width: 760px) {
+  .grid, .harbour { grid-template-columns: 1fr; }
+  .stencil { font-size: 40px; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .card { transition: transform .25s ease, box-shadow .25s ease; }
+  .card:hover { transform: translateY(-6px); box-shadow: 0 16px 28px -12px rgba(15,43,64,.35); }
+  .btn, .berth { transition: filter .15s, border-color .15s, background .15s, color .15s; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sail, .bob, .wave-a, .wave-b, .wave-c, .cloud, .trolley, .gull { animation: none; }
+  .sail { transform: translateX(320px); }
+}
+</style>
+
+<section class="hero">
+  <div class="hero-text">
+    <div class="hero-copy">
+      <span class="eyebrow">Laem Chabang Port · THLCH · 13°05′N 100°53′E</span>
+      <h1>ลิงก์และเบอร์ติดต่อท่าเทียบเรือ ท่าเรือแหลมฉบัง</h1>
+      <p class="lede">รวมเว็บไซต์ ลิงก์ Open Gate และเบอร์โทรของผู้ประกอบการท่าไว้ในที่เดียว เลือกท่าจากแผนผังด้านล่าง หรือค้นหาจากชื่อและรหัสท่า</p>
+    </div>
+    <div class="hero-side">
+    <nav class="lang" aria-label="Language / ภาษา">
+      <a href="laem-chabang-terminals.html" lang="th" aria-current="page">TH</a>
+      <a href="en.html" lang="en">EN</a>
+    </nav>
+    <div class="clock" aria-live="off">
+      <span class="clock-label">เวลาท่าเรือ (ICT)</span>
+      <span class="clock-time" id="clock-time">--:--:--</span>
+      <span class="clock-date" id="clock-date"></span>
+    </div>
+    </div>
+  </div>
+
+  <svg class="scene" viewBox="0 0 1600 300" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+    <defs>
+      <linearGradient id="seaGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#4fb0ec"/><stop offset="1" stop-color="#136aa8"/>
+      </linearGradient>
+      <radialGradient id="sunGlow"><stop offset="0" stop-color="#fff3b0"/><stop offset=".55" stop-color="#ffd54a"/><stop offset="1" stop-color="#ffd54a" stop-opacity="0"/></radialGradient>
+    </defs>
+
+    <circle cx="300" cy="80" r="70" fill="url(#sunGlow)"/>
+    <circle cx="300" cy="80" r="30" fill="#ffd23f"/>
+
+    <g class="cloud">
+      <g fill="#ffffff" opacity=".9">
+        <ellipse cx="700" cy="60" rx="60" ry="16"/><ellipse cx="730" cy="48" rx="34" ry="18"/>
+        <ellipse cx="1500" cy="40" rx="70" ry="15"/><ellipse cx="1530" cy="30" rx="34" ry="16"/>
+        <ellipse cx="2300" cy="60" rx="60" ry="16"/><ellipse cx="2330" cy="48" rx="34" ry="18"/>
+        <ellipse cx="3100" cy="40" rx="70" ry="15"/><ellipse cx="3130" cy="30" rx="34" ry="16"/>
+      </g>
+    </g>
+    <g class="cloud slow">
+      <g fill="#ffffff" opacity=".7">
+        <ellipse cx="1100" cy="90" rx="46" ry="11"/><ellipse cx="1120" cy="82" rx="24" ry="12"/>
+        <ellipse cx="2900" cy="90" rx="46" ry="11"/><ellipse cx="2920" cy="82" rx="24" ry="12"/>
+      </g>
+    </g>
+
+    <g fill="none" stroke="#2c4a60" stroke-width="2.4" stroke-linecap="round">
+      <g class="gull"><path d="M520 120 q8 -8 16 0 q8 -8 16 0"/></g>
+      <g class="gull" style="animation-delay:-1.1s"><path d="M570 100 q6 -6 12 0 q6 -6 12 0"/></g>
+    </g>
+
+    <!-- sea -->
+    <rect x="0" y="214" width="1600" height="86" fill="url(#seaGrad)"/>
+    <g class="wave-a"><path id="waveA" fill="#7cc6f2" opacity=".55"/></g>
+
+    <!-- ship -->
+    <g transform="translate(0 214)">
+      <g class="sail">
+        <g class="bob">
+          <g id="ship"></g>
+        </g>
+      </g>
+    </g>
+
+    <g class="wave-b"><path id="waveB" fill="#3a9fe0" opacity=".8"/></g>
+
+    <!-- quay -->
+    <rect x="1000" y="196" width="600" height="104" fill="#cfd8dd"/>
+    <rect x="1000" y="196" width="600" height="6" fill="#ffc21a"/>
+    <rect x="1000" y="202" width="600" height="20" fill="#b7c3ca"/>
+    <g id="stacks"></g>
+    <g id="cranes"></g>
+
+    <g class="wave-c"><path id="waveC" fill="#1f7fc4"/></g>
+  </svg>
+</section>
+
+<main class="wrap">
+  <section aria-labelledby="map-title" style="display:grid;gap:12px">
+    <div class="section-head">
+      <h2 class="section" id="map-title">แผนผังตามแอ่งจอดเรือ</h2>
+      <span class="hint">กดที่ท่าเพื่อไปยังข้อมูลติดต่อ</span>
+    </div>
+    <div class="harbour">
+      <div class="pier"><div class="pier-body">
+        <span class="pier-name">BASIN A</span>
+        <div class="berths">
+          <a class="berth" href="#lcmt" style="--c:var(--c-lcmt)"><b>A0</b>LCMT</a>
+          <a class="berth" href="#hpt" style="--c:var(--c-hpt)"><b>A3</b>HPT</a>
+        </div>
+      </div></div>
+      <div class="pier"><div class="pier-body">
+        <span class="pier-name">BASIN B</span>
+        <div class="berths">
+          <a class="berth" href="#esco" style="--c:var(--c-esco)"><b>B3</b>ESCO</a>
+          <a class="berth" href="#lcit" style="--c:var(--c-lcit)"><b>B5</b>LCIT</a>
+        </div>
+      </div></div>
+      <div class="pier"><div class="pier-body">
+        <span class="pier-name">BASIN C</span>
+        <div class="berths">
+          <a class="berth" href="#lcit" style="--c:var(--c-lcit)"><b>C3</b>LCIT</a>
+        </div>
+      </div></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="list-title" style="display:grid;gap:16px">
+    <div class="section-head">
+      <h2 class="section" id="list-title">ท่าเทียบเรือ</h2>
+      <span class="count" id="count" aria-live="polite">4 ท่า</span>
+    </div>
+    <div class="search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="5" r="2"/><path d="M12 7v14M5 12H3a9 9 0 0 0 18 0h-2M8 10h8"/></svg>
+      <label for="q" class="eyebrow" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">ค้นหาท่า</label>
+      <input id="q" type="search" placeholder="ค้นหาชื่อท่า รหัสท่า หรือเบอร์โทร เช่น LCIT, B3" autocomplete="off">
+    </div>
+    <div class="grid" id="grid"></div>
+    <p class="empty" id="empty" hidden>ไม่พบท่าที่ตรงกับคำค้นหา ลองพิมพ์รหัสท่า เช่น A0 หรือ B5</p>
+  </section>
+</main>
+
+<footer>
+  <svg class="waves" viewBox="0 0 1600 36" preserveAspectRatio="none" aria-hidden="true">
+    <path d="M0 18 Q100 0 200 18 T400 18 T600 18 T800 18 T1000 18 T1200 18 T1400 18 T1600 18 V36 H0 Z" fill="#136aa8"/>
+  </svg>
+  <div class="inner">
+    <span>ข้อมูลท่าเทียบเรือทั้งหมด: <a href="https://lcp.port.co.th/" target="_blank" rel="noopener">การท่าเรือแห่งประเทศไทย ท่าเรือแหลมฉบัง</a></span>
+    <span>เบอร์โทรเป็นเบอร์กลางของแต่ละบริษัท</span>
+  </div>
+</footer>
+
+<script>
+const terminals = [
+  { id: "lcmt", code: "LCMT", berth: "A0", color: "var(--c-lcmt)", name: "LCMT Co., Ltd.",
+    desc: "บริษัทในเครือ LCB1 ดำเนินการท่าเทียบเรือ A0", url: "https://www.lcb1.com/Home", gate: "https://www.lcb1.com/opengate/", tel: "038-408-600" },
+  { id: "hpt", code: "HPT", berth: "A3", color: "var(--c-hpt)", name: "Hutchison Ports Thailand",
+    desc: "ท่าเทียบเรืออเนกประสงค์ A3 รองรับตู้สินค้าและสินค้าทั่วไป", url: "https://hutchisonports.co.th/terminal-a3/", gate: "https://online.hutchisonports.co.th/hptpcs/f?p=114:17", tel: "038-408-700" },
+  { id: "esco", code: "ESCO", berth: "B3", color: "var(--c-esco)", name: "Eastern Sea Laem Chabang Terminal",
+    desc: "ท่าเทียบเรือตู้สินค้า B3 เปิดบริการ 24 ชั่วโมง", url: "https://www.esco.co.th", gate: "https://service.esco.co.th/BerthSchedule", tel: "033-005-678" },
+  { id: "lcit", code: "LCIT", berth: "B5 / C3", color: "var(--c-lcit)", name: "Laem Chabang International Terminal",
+    desc: "ท่าเทียบเรือตู้สินค้า B5 และ C3", url: "https://www.lcit.com", gate: "https://www.lcit.com/checkopengate", tel: "038-408-200" },
+];
+
+const icon = {
+  open: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>',
+  gate: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 21V8M21 21V8M3 8l18 0M3 12h18M7 8v13M11 8v13M15 8v13M19 8v13"/></svg>',
+  copy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a1 1 0 0 1 1-1h9"/></svg>'
+};
+
+/* ---------- Cards ---------- */
+const grid = document.getElementById("grid");
+grid.innerHTML = terminals.map(t => `
+  <article class="card" id="${t.id}" style="--c:${t.color}" data-search="${(t.code + " " + t.berth + " " + t.name + " " + t.tel).toLowerCase()}">
+    <div class="box">
+      <h3 class="stencil">${t.code}</h3>
+      <span class="marking">BERTH<strong>${t.berth}</strong></span>
+    </div>
+    <div class="content">
+      <p class="fullname">${t.name}</p>
+      <p class="desc">${t.desc}</p>
+      <dl class="info">
+        <div><dt>เว็บไซต์</dt><dd class="url">${t.url.replace(/^https?:\/\//, "")}</dd></div>
+        <div><dt>โทรศัพท์</dt><dd class="tel"><a href="tel:+66${t.tel.replace(/-/g, "").slice(1)}">${t.tel}</a>
+          <button class="mini" type="button" data-copy="${t.tel}" aria-label="คัดลอกเบอร์ ${t.tel}"><span>คัดลอก</span></button></dd></div>
+      </dl>
+      <div class="actions">
+        <a class="btn btn-primary" href="${t.url}" target="_blank" rel="noopener">${icon.open}เปิดเว็บไซต์</a>
+        <a class="btn btn-gate" href="${t.gate}" target="_blank" rel="noopener" title="ตารางเรือ / Open Gate">${icon.gate}Open Gate</a>
+        <button class="btn btn-ghost" type="button" data-copy="${t.url}">${icon.copy}<span>คัดลอกลิงก์</span></button>
+      </div>
+    </div>
+  </article>`).join("");
+
+grid.addEventListener("click", e => {
+  const b = e.target.closest("[data-copy]");
+  if (!b) return;
+  const label = b.querySelector("span");
+  const orig = label.textContent;
+  const done = () => { label.textContent = "คัดลอกแล้ว"; setTimeout(() => label.textContent = orig, 1600); };
+  if (navigator.clipboard) navigator.clipboard.writeText(b.dataset.copy).then(done).catch(() => fallback(b, label));
+  else fallback(b, label);
+});
+function fallback(b, label) {
+  const el = b.closest(".tel") ? b.closest(".tel").querySelector("a") : b.closest(".card").querySelector(".url");
+  const r = document.createRange(); r.selectNodeContents(el);
+  const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+  label.textContent = "กด Ctrl+C";
+}
+
+/* ---------- Search ---------- */
+const q = document.getElementById("q"), count = document.getElementById("count"), empty = document.getElementById("empty");
+q.addEventListener("input", () => {
+  const v = q.value.trim().toLowerCase().replace(/\s+/g, " ");
+  let n = 0;
+  grid.querySelectorAll(".card").forEach(c => {
+    const show = !v || c.dataset.search.includes(v);
+    c.hidden = !show; if (show) n++;
+  });
+  count.textContent = n + " ท่า";
+  empty.hidden = n > 0;
+});
+
+/* ---------- Port clock ---------- */
+const tFmt = new Intl.DateTimeFormat("th-TH", { timeZone: "Asia/Bangkok", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false });
+const dFmt = new Intl.DateTimeFormat("th-TH", { timeZone: "Asia/Bangkok", weekday: "long", day: "numeric", month: "short", year: "numeric" });
+function tick() {
+  const now = new Date();
+  document.getElementById("clock-time").textContent = tFmt.format(now);
+  document.getElementById("clock-date").textContent = dFmt.format(now);
+}
+tick(); setInterval(tick, 1000);
+
+/* ---------- Harbour scene ---------- */
+const NS = "http://www.w3.org/2000/svg";
+const boxColors = ["#ea6a2a", "#1f6fc0", "#1d9b72", "#c9363c", "#f2b705", "#7a4fb5", "#2b9fb8"];
+function el(tag, attrs, parent) {
+  const n = document.createElementNS(NS, tag);
+  for (const k in attrs) n.setAttribute(k, attrs[k]);
+  parent.appendChild(n); return n;
+}
+function wave(y, amp, period, width = 3200, bottom = 300) {
+  let d = `M0 ${y} Q${period / 4} ${y - amp} ${period / 2} ${y}`;
+  for (let x = period; x <= width; x += period / 2) d += ` T${x} ${y}`;
+  return d + ` V${bottom} H0 Z`;
+}
+document.getElementById("waveA").setAttribute("d", wave(216, 4, 200));
+document.getElementById("waveB").setAttribute("d", wave(240, 6, 320));
+document.getElementById("waveC").setAttribute("d", wave(270, 7, 400));
+
+// container ship (origin = waterline at bow-left)
+const ship = document.getElementById("ship");
+let seed = 7; const rnd = () => (seed = (seed * 9301 + 49297) % 233280) / 233280;
+for (let tier = 0; tier < 3; tier++) {
+  for (let i = 0; i < 9; i++) {
+    if (tier === 2 && (i < 1 || i > 7)) continue;
+    el("rect", { x: 28 + i * 22, y: -30 - tier * 13, width: 21, height: 12, rx: 1, fill: boxColors[Math.floor(rnd() * boxColors.length)] }, ship);
+  }
+}
+el("rect", { x: 236, y: -66, width: 34, height: 48, fill: "#ffffff", stroke: "#c7d6df" }, ship);
+for (let r = 0; r < 3; r++) el("rect", { x: 241, y: -60 + r * 12, width: 24, height: 5, fill: "#2c4a60" }, ship);
+el("rect", { x: 252, y: -84, width: 12, height: 18, fill: "#c9363c" }, ship);
+el("path", { d: "M0 -18 H310 L292 16 H18 Z", fill: "#14324a" }, ship);
+el("path", { d: "M8 2 H300 L292 16 H18 Z", fill: "#c9363c" }, ship);
+el("text", { x: 60, y: -4, fill: "#ffffff", "font-family": "JetBrains Mono, monospace", "font-size": 11, "font-weight": 700, "letter-spacing": 2 }, ship).textContent = "HEUNG A LINE";
+
+// container stacks on quay
+const stacks = document.getElementById("stacks");
+for (let col = 0; col < 7; col++) {
+  const h = 2 + Math.floor(rnd() * 3);
+  for (let row = 0; row < h; row++) {
+    el("rect", { x: 1330 + col * 38, y: 182 - row * 15, width: 36, height: 14, rx: 1, fill: boxColors[Math.floor(rnd() * boxColors.length)] }, stacks);
+  }
+}
+
+// ship-to-shore gantry cranes with moving trolleys
+const cranes = document.getElementById("cranes");
+[{ x: 1060, c: "#ea6a2a" }, { x: 1210, c: "#1f6fc0" }].forEach((cr, i) => {
+  const g = el("g", {}, cranes);
+  el("rect", { x: cr.x, y: 70, width: 8, height: 128, fill: cr.c }, g);
+  el("rect", { x: cr.x + 70, y: 70, width: 8, height: 128, fill: cr.c }, g);
+  el("rect", { x: cr.x, y: 120, width: 78, height: 6, fill: cr.c }, g);
+  el("path", { d: `M${cr.x + 4} 126 L${cr.x + 74} 196 M${cr.x + 74} 126 L${cr.x + 4} 196`, stroke: cr.c, "stroke-width": 3 }, g);
+  el("rect", { x: cr.x - 190, y: 66, width: 300, height: 9, fill: cr.c }, g);
+  el("path", { d: `M${cr.x + 39} 30 L${cr.x - 150} 66 M${cr.x + 39} 30 L${cr.x + 100} 66`, stroke: "#2c4a60", "stroke-width": 2 }, g);
+  el("rect", { x: cr.x + 33, y: 26, width: 12, height: 44, fill: cr.c }, g);
+  el("rect", { x: cr.x + 50, y: 48, width: 26, height: 18, fill: "#ffffff", stroke: "#c7d6df" }, g);
+  const t = el("g", { class: "trolley" + (i ? " t2" : "") }, g);
+  el("rect", { x: cr.x - 30, y: 74, width: 22, height: 8, fill: "#2c4a60" }, t);
+  el("line", { x1: cr.x - 22, y1: 82, x2: cr.x - 22, y2: 132, stroke: "#2c4a60", "stroke-width": 1.5 }, t);
+  el("line", { x1: cr.x - 16, y1: 82, x2: cr.x - 16, y2: 132, stroke: "#2c4a60", "stroke-width": 1.5 }, t);
+  el("rect", { x: cr.x - 37, y: 132, width: 36, height: 14, rx: 1, fill: i ? "#1d9b72" : "#f2b705" }, t);
+});
+</script>
