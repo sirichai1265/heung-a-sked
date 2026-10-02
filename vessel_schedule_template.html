@@ -569,6 +569,7 @@
   .cal-detail-port.port-bkk{background:var(--teal-soft);color:var(--teal);}
   .cal-detail-port.port-lch{background:var(--amber-soft);color:var(--amber);}
   .cal-detail-vessel{font-weight:600;color:var(--ink);flex:1 1 180px;}
+  .cal-detail-voyage{font-family:'IBM Plex Mono', monospace;color:var(--ink-dim);font-size:11px;min-width:48px;}
   .cal-detail-wharf{color:var(--ink-dim);font-size:11.5px;}
   @media (max-width:600px){
     .cal-cell{min-height:56px;}
@@ -680,7 +681,7 @@
     <div class="summary-scroll">
       <table class="leg-table summary-table">
         <thead><tr>
-          <th>Vessel</th><th>Service</th><th>Status</th><th>Location</th><th>Since / ETA</th>
+          <th>Vessel</th><th>Service</th><th>Voyage</th><th>Status</th><th>Location</th><th>Since / ETA</th>
         </tr></thead>
         <tbody id="summaryBody"></tbody>
       </table>
@@ -1149,7 +1150,7 @@ function buildPortCallIndex(){
       const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
       (map[key] = map[key] || []).push({
         vessel:name, code: vObj ? vObj.vesselCode : null,
-        port:l.pol, eta:l.eta, wharf:l.wharf,
+        port:l.pol, eta:l.eta, wharf:l.wharf, vygBound:l.vygBound,
       });
     });
   });
@@ -1187,6 +1188,7 @@ function renderCalDetail(idx){
           <span class="cal-detail-time">${fmtTime(e.eta)}</span>
           <span class="cal-detail-port ${e.port==='THBKK'?'port-bkk':'port-lch'}">${e.port}</span>
           <span class="cal-detail-vessel">${e.code?`<span class="v-code">${escapeHtml(e.code)}</span> `:''}${escapeHtml(e.vessel)}</span>
+          <span class="cal-detail-voyage">${e.vygBound?escapeHtml(e.vygBound):'-'}</span>
           <span class="cal-detail-wharf">${escapeHtml(wharfLabel(e.wharf))}</span>
         </div>
       `).join('')}
@@ -1226,7 +1228,7 @@ function renderCalendar(){
     return `<div class="cal-cell ${c.out?'out':''} ${key===todayKey?'today':''} ${calSelectedDay===key?'selected':''}" data-key="${key}" data-has="${entries.length>0}">
       <div class="cal-daynum">${c.day}</div>
       <div class="cal-entries">
-        ${shown.map(e => `<div class="cal-chip ${e.port==='THBKK'?'port-bkk':'port-lch'}" title="${escapeHtml(e.vessel)} · ${e.port} · ${fmtTime(e.eta)}">${fmtTime(e.eta)} ${escapeHtml(e.code||e.vessel)}</div>`).join('')}
+        ${shown.map(e => `<div class="cal-chip ${e.port==='THBKK'?'port-bkk':'port-lch'}" title="${escapeHtml(e.vessel)} · ${e.vygBound?escapeHtml(e.vygBound)+' · ':''}${e.port} · ${fmtTime(e.eta)}">${fmtTime(e.eta)} ${escapeHtml(e.code||e.vessel)}</div>`).join('')}
         ${more>0 ? `<div class="cal-more">+${more} more</div>` : ''}
       </div>
     </div>`;
@@ -1299,12 +1301,14 @@ function renderSummary(){
   document.getElementById('summaryBody').innerHTML = list.map(v => {
     const expanded = expandedVessel === v.vessel;
     const detailRow = expanded
-      ? `<tr class="summary-detail-row"><td colspan="5">${renderDetailPanel(v.vessel, true)}</td></tr>`
+      ? `<tr class="summary-detail-row"><td colspan="6">${renderDetailPanel(v.vessel, true)}</td></tr>`
       : '';
+    const voyage = primaryVygBound(v);
     return `
     <tr class="summary-row${expanded?' expanded':''}" data-vessel="${v.vessel.replace(/"/g,'&quot;')}">
       <td class="mono-strong summary-vessel-link">${escapeHtml(v.vessel)}${v.vesselCode ? ` <span style="opacity:.6">(${escapeHtml(v.vesselCode)})</span>` : ''}</td>
       <td>${escapeHtml(v.service||'-')}</td>
+      <td class="mono-strong">${voyage?escapeHtml(voyage):'-'}</td>
       <td>${statusPill(v)}</td>
       <td>${summaryLocationText(v)}</td>
       <td>${summarySinceEtaText(v)}</td>
