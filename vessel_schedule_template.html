@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="th">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <title>Vessel Tracking — THBKK / THLCH</title>
@@ -628,8 +628,8 @@
   <div class="controls">
     <div class="search-box" id="searchBox">
       <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <input id="searchInput" type="text" placeholder="ค้นหาชื่อเรือ / ตัวย่อ… (เช่น KMTC, KMBK)" autocomplete="off">
-      <button class="search-clear" id="searchClear" type="button" aria-label="ล้างคำค้นหา">×</button>
+      <input id="searchInput" type="text" placeholder="Search vessel name / code… (e.g. KMTC, KMBK)" autocomplete="off">
+      <button class="search-clear" id="searchClear" type="button" aria-label="Clear search">×</button>
     </div>
     <div class="chip-row" id="statusChips">
       <div class="chip active" data-filter="all">ALL</div>
@@ -660,7 +660,7 @@
     <span id="resultCount">31 vessels</span>
     <span>SORT
       <select class="sort-select" id="sortSelect">
-        <option value="date" selected>วัน/เดือน (เร็วสุดก่อน)</option>
+        <option value="date" selected>Date (soonest first)</option>
         <option value="name">A–Z</option>
         <option value="bkk">Soonest → THBKK</option>
         <option value="lch">Soonest → THLCH</option>
@@ -669,13 +669,13 @@
   </div>
 
   <div class="grid" id="cardGrid"></div>
-  <div class="empty-state" id="emptyState" style="display:none;">ไม่พบเรือที่ตรงกับคำค้นหา</div>
+  <div class="empty-state" id="emptyState" style="display:none;">No vessels match your search</div>
 
   <div class="calendar-view" id="calendarView" style="display:none;">
     <div class="cal-nav">
-      <button class="cal-nav-btn" id="calPrev" type="button" aria-label="เดือนก่อนหน้า">‹</button>
+      <button class="cal-nav-btn" id="calPrev" type="button" aria-label="Previous month">‹</button>
       <div class="cal-month-label" id="calMonthLabel">—</div>
-      <button class="cal-nav-btn" id="calNext" type="button" aria-label="เดือนถัดไป">›</button>
+      <button class="cal-nav-btn" id="calNext" type="button" aria-label="Next month">›</button>
       <button class="cal-today-btn" id="calToday" type="button">Today</button>
     </div>
     <div class="chip-row cal-port-filter" id="calPortFilter">
@@ -755,10 +755,10 @@ function fmtCountdown(hrs){
   if(hrs < 0) return '';
   if(hrs < 48){
     const h = Math.round(hrs);
-    return h<=0 ? 'ภายในไม่กี่นาที' : `อีก ~${h} ชม.`;
+    return h<=0 ? 'within minutes' : `in ~${h}h`;
   }
   const d = Math.round(hrs/24);
-  return `อีก ~${d} วัน`;
+  return `in ~${d} day${d===1?'':'s'}`;
 }
 
 function nextChangeForVessel(vesselName){
@@ -781,7 +781,7 @@ function fmtDeltaBadge(deltaHours){
   const cls = isDelay ? 'delay' : 'early';
   const symbol = isDelay ? '▲' : '▼';
   const abs = Math.abs(deltaHours);
-  const label = abs < 24 ? `${abs}ชม.` : `${(abs/24).toFixed(1)}วัน`;
+  const label = abs < 24 ? `${abs}h` : `${(abs/24).toFixed(1)}d`;
   return `<span class="change-badge ${cls}">${symbol} ${isDelay?'delay':'early'} ${label}</span>`;
 }
 
@@ -799,8 +799,8 @@ function cardChangeLine(v){
   const next = nextChangeForVessel(v.vessel);
   if(!next) return '';
   const count = changeCountForVessel(v.vessel);
-  const more = count > 1 ? ` (+${count-1} legs อื่น)` : '';
-  return `<div class="card-change-line">${fmtDeltaBadge(next.deltaHours)} ที่ <b style="color:var(--ink)">${next.pol}</b> เทียบกับตารางก่อนหน้า (ETA เดิม ${fmtDate(next.oldEta)})${more}</div>`;
+  const more = count > 1 ? ` (+${count-1} more leg${count-1===1?'':'s'})` : '';
+  return `<div class="card-change-line">${fmtDeltaBadge(next.deltaHours)} at <b style="color:var(--ink)">${next.pol}</b> vs previous schedule (was ETA ${fmtDate(next.oldEta)})${more}</div>`;
 }
 
 function statusPill(v){
@@ -813,16 +813,16 @@ function positionLine(v){
   if(v.status === 'docked'){
     const wInfo = wharfInfo(v.dockedWharf);
     return `<div class="position-line">${ICONS.pin}
-      <span>อยู่ที่ <b>${v.dockedLoc}</b> <span class="mono-val">(${v.dockedWharf||'-'})</span>${wInfo ? ` — ${escapeHtml(wInfo)}` : ''} · ออกไป <b>${v.dockedNextDest||'-'}</b> ~<span class="mono-val">${fmtDate(v.dockedUntil)}</span></span>
+      <span>At <b>${v.dockedLoc}</b> <span class="mono-val">(${v.dockedWharf||'-'})</span>${wInfo ? ` — ${escapeHtml(wInfo)}` : ''} · departs for <b>${v.dockedNextDest||'-'}</b> ~<span class="mono-val">${fmtDate(v.dockedUntil)}</span></span>
     </div>`;
   }
   if(v.status === 'transit'){
-    const eta = v.transitEta ? ` · คาดถึง <span class="mono-val">${fmtDate(v.transitEta)}</span>` : '';
+    const eta = v.transitEta ? ` · ETA <span class="mono-val">${fmtDate(v.transitEta)}</span>` : '';
     return `<div class="position-line">${ICONS.transit}
       <span><b>${v.transitFrom||'?'}</b> → <b>${v.transitTo||'?'}</b>${eta}</span>
     </div>`;
   }
-  return `<div class="position-line">${ICONS.question} <span>ไม่มีข้อมูลย้อนหลังในไฟล์นี้</span></div>`;
+  return `<div class="position-line">${ICONS.question} <span>No current position in this file</span></div>`;
 }
 
 function vygBoundLine(vb){
@@ -848,7 +848,7 @@ function portTile(eta, wharf, label, currentCall, vygBound){
     return `<div class="port-tile tile-soon">
       <div class="port-tile-label">${ICONS.pin}${label} <span style="color:var(--teal);margin-left:4px">● NOW</span></div>
       <div class="port-tile-eta">Alongside</div>
-      <div class="port-tile-countdown ${soon?'soon':''}">ออกไป ${currentCall.nextDest||'-'} ~${fmtDate(currentCall.until)} (${fmtCountdown(hrs)})</div>
+      <div class="port-tile-countdown ${soon?'soon':''}">Departs for ${currentCall.nextDest||'-'} ~${fmtDate(currentCall.until)} (${fmtCountdown(hrs)})</div>
       ${vygBoundLine(currentCall.vygBound)}
       <div class="port-tile-wharf" title="${escapeHtml(wInfo)}">Wharf ${currentCall.wharf||'-'}${wInfo ? ` · ${escapeHtml(wInfo)}` : ''}</div>
     </div>`;
@@ -856,7 +856,7 @@ function portTile(eta, wharf, label, currentCall, vygBound){
   if(!eta){
     return `<div class="port-tile">
       <div class="port-tile-label">${ICONS.pin}${label}</div>
-      <div class="port-tile-eta na">— ไม่พบกำหนดการ</div>
+      <div class="port-tile-eta na">— No upcoming call</div>
     </div>`;
   }
   const hrs = hoursUntil(eta);
@@ -902,10 +902,10 @@ function renderStats(){
   const soon = VESSELS.filter(v=>isSoon(v)).length;
   const changed = VESSELS.filter(v=>nextChangeForVessel(v.vessel)).length;
   const tiles = [
-    {icon:ICONS.ship, cls:'i-total', num:total, label:'เรือที่ติดตามทั้งหมด'},
-    {icon:ICONS.anchor, cls:'i-alongside', num:alongside, label:'กำลัง Alongside'},
-    {icon:ICONS.clock, cls:'i-soon', num:soon, label:'ถึงท่าใน 48 ชม.'},
-    {icon:ICONS.alert, cls:'i-changed', num:changed, label:'ตารางเปลี่ยนจากเมื่อวาน'},
+    {icon:ICONS.ship, cls:'i-total', num:total, label:'Vessels tracked'},
+    {icon:ICONS.anchor, cls:'i-alongside', num:alongside, label:'Alongside now'},
+    {icon:ICONS.clock, cls:'i-soon', num:soon, label:'Arriving within 48h'},
+    {icon:ICONS.alert, cls:'i-changed', num:changed, label:'Schedule changed vs previous'},
   ];
   document.getElementById('statsBar').innerHTML = tiles.map(t=>`
     <div class="stat-tile">
@@ -1243,7 +1243,7 @@ function render(){
       </div>
       ${cardChangeLine(v)}
       <div class="card-footer">
-        <span class="expand-hint">${expandedVessel===v.vessel ? '▲ ซ่อนตารางเดินเรือทั้งหมด' : '▼ คลิกเพื่อดูตารางเดินเรือทั้งหมด'}</span>
+        <span class="expand-hint">${expandedVessel===v.vessel ? '▲ Hide full schedule' : '▼ Click to view full schedule'}</span>
       </div>
     </div>
     ${expandedVessel===v.vessel ? renderDetailPanel(v.vessel) : ''}
@@ -1311,7 +1311,7 @@ function updateHeader(){
   const mm=String(NOW.getMinutes()).padStart(2,'0');
   document.getElementById('nowReadout').textContent = `${fmtLongDate(NOW.toISOString())} · ${hh}:${mm}`;
   const statusEl = document.getElementById('dataStatus');
-  statusEl.innerHTML = 'แหล่งข้อมูล: __SOURCE_FILENAME__ (ค่าเริ่มต้น)';
+  statusEl.innerHTML = 'Data source: __SOURCE_FILENAME__';
 }
 
 // ---------- Calendar view ----------
@@ -1477,7 +1477,7 @@ function summarySinceEtaText(v){
 function renderSummary(){
   const q = currentQuery.toLowerCase();
   let list = VESSELS.filter(v => v.vessel.toLowerCase().includes(q) || (v.vesselCode||'').toLowerCase().includes(q));
-  // "ตำแหน่ง (TH ก่อน)" reuses earliestPortDate(): vessels alongside at
+  // "Location (TH first)" reuses earliestPortDate(): vessels alongside at
   // THBKK/THLCH sort first, then everyone else by their next TH arrival.
   list = summarySort === 'name'
     ? list.slice().sort((a,b)=> a.vessel.localeCompare(b.vessel))
