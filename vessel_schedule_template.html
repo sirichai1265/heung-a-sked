@@ -510,6 +510,55 @@
   .summary-detail-row td{padding:0;border-bottom:1px solid rgba(16,32,48,0.07);}
   .summary-detail-row .detail-panel{margin-top:0;border:none;border-radius:0;box-shadow:none;background:transparent;animation:none;padding:4px 14px 14px;}
 
+  .berth-view{margin-top:4px;}
+  .bt-scroll{overflow-x:auto;background:var(--navy-panel);border:1px solid var(--navy-line);border-radius:12px;}
+  .bt-inner{position:relative;}
+  .bt-head{display:flex;border-bottom:1px solid var(--navy-line);}
+  .bt-days{display:flex;}
+  .bt-day{
+    flex:none;font-family:'IBM Plex Mono', monospace;font-size:10px;color:var(--ink-dim);
+    text-align:center;padding:9px 0;border-left:1px solid var(--navy-line);white-space:nowrap;overflow:hidden;
+  }
+  .bt-day.weekend{background:rgba(16,32,48,0.03);}
+  .bt-day.today{color:var(--teal);font-weight:700;background:var(--teal-soft);}
+  .bt-group{
+    position:sticky;left:0;width:max-content;padding:9px 10px 4px;
+    font-family:'IBM Plex Mono', monospace;font-size:10.5px;letter-spacing:0.06em;text-transform:uppercase;color:var(--teal);
+  }
+  .bt-row{display:flex;border-top:1px solid rgba(16,32,48,0.07);}
+  .bt-label{
+    flex:none;position:sticky;left:0;z-index:3;background:var(--navy-panel);
+    padding:4px 10px;border-right:1px solid var(--navy-line);box-sizing:border-box;
+    display:flex;flex-direction:column;justify-content:center;gap:1px;overflow:hidden;
+  }
+  .bt-label b{font-family:'IBM Plex Mono', monospace;font-size:12px;color:var(--ink);}
+  .bt-label span{font-size:10px;color:var(--ink-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .bt-label-head{font-family:'IBM Plex Mono', monospace;font-size:10px;letter-spacing:0.06em;text-transform:uppercase;color:var(--ink-dim);}
+  .bt-track{
+    flex:none;position:relative;overflow:hidden;
+    background-image:linear-gradient(to right, var(--navy-line) 1px, transparent 1px);
+  }
+  .bt-bar{
+    position:absolute;box-sizing:border-box;border:1px solid;border-radius:5px;padding:0 5px;
+    font-family:'IBM Plex Mono', monospace;font-size:10px;font-weight:600;line-height:18px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;
+  }
+  .bt-bar.port-bkk{background:var(--teal-soft);border-color:var(--teal);color:var(--teal);}
+  .bt-bar.port-lch{background:var(--amber-soft);border-color:var(--amber);color:var(--amber);}
+  .bt-bar.past{opacity:.45;}
+  .bt-bar.current{box-shadow:0 0 0 2px rgba(217,83,79,0.45);font-weight:700;}
+  .bt-bar.changed::after{content:'';position:absolute;top:2px;right:2px;width:6px;height:6px;border-radius:50%;background:#D9534F;}
+  .bt-bar:hover{filter:brightness(0.94);z-index:1;}
+  .bt-wait{position:absolute;height:0;border-top:2px dashed var(--paper-dim);}
+  .bt-now{position:absolute;top:0;bottom:0;width:0;border-left:2px solid #D9534F;z-index:2;pointer-events:none;}
+  .bt-legend{display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:8px;font-size:11px;color:var(--ink-dim);align-items:center;}
+  .bt-legend span{display:inline-flex;align-items:center;gap:6px;}
+  .bt-key{display:inline-block;width:18px;height:10px;border-radius:3px;border:1px solid;}
+  .bt-key-bkk{background:var(--teal-soft);border-color:var(--teal);}
+  .bt-key-lch{background:var(--amber-soft);border-color:var(--amber);}
+  .bt-key-wait{height:0;border:none;border-top:2px dashed var(--paper-dim);border-radius:0;}
+  .bt-key-now{width:0;height:12px;border:none;border-left:2px solid #D9534F;border-radius:0;}
+
   .calendar-view{margin-top:4px;}
   .cal-nav{
     display:flex;align-items:center;gap:10px;margin-bottom:12px;
@@ -654,6 +703,10 @@
       <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="9" y1="10" x2="9" y2="20"/></svg>
       Summary
     </button>
+    <button class="view-btn" id="viewBtnBerth" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="4" x2="3" y2="20"/><rect x="6" y="5" width="9" height="4" rx="1"/><rect x="10" y="11" width="10" height="4" rx="1"/><rect x="5" y="17" width="7" height="3" rx="1"/></svg>
+      Berth
+    </button>
   </div>
 
   <div class="meta-row" id="metaRow">
@@ -688,6 +741,28 @@
     </div>
     <div class="cal-grid" id="calGrid"></div>
     <div class="cal-detail" id="calDetail" style="display:none;"></div>
+  </div>
+
+  <div class="berth-view" id="berthView" style="display:none;">
+    <div class="cal-nav">
+      <button class="cal-nav-btn" id="btPrev" type="button" aria-label="Previous week">‹</button>
+      <div class="cal-month-label" id="btRangeLabel">—</div>
+      <button class="cal-nav-btn" id="btNext" type="button" aria-label="Next week">›</button>
+      <button class="cal-today-btn" id="btToday" type="button">Today</button>
+    </div>
+    <div class="chip-row cal-port-filter" id="btPortFilter">
+      <div class="chip active" data-port="all">ALL</div>
+      <div class="chip chip-bkk" data-port="THBKK">THBKK</div>
+      <div class="chip chip-lch" data-port="THLCH">THLCH</div>
+    </div>
+    <div class="bt-scroll" id="btScroll"></div>
+    <div class="bt-legend">
+      <span><i class="bt-key bt-key-bkk"></i>Alongside THBKK (ETB → ETD)</span>
+      <span><i class="bt-key bt-key-lch"></i>Alongside THLCH</span>
+      <span><i class="bt-key bt-key-wait"></i>Waiting (ETA → ETB)</span>
+      <span><i class="bt-key bt-key-now"></i>Now</span>
+      <span class="lm-note">Wharf codes are terminals with several berths, so stacked bars mean vessels alongside at the same terminal at once, not a clash. Click a bar to open that vessel's schedule.</span>
+    </div>
   </div>
 
   <div class="summary-view" id="summaryView" style="display:none;">
@@ -1273,6 +1348,7 @@ document.getElementById('searchInput').addEventListener('input', e=>{
   render();
   if(currentView==='calendar') renderCalendar();
   if(currentView==='summary') renderSummary();
+  if(currentView==='berth') renderBerth();
 });
 document.getElementById('searchClear').addEventListener('click', ()=>{
   const input = document.getElementById('searchInput');
@@ -1284,14 +1360,15 @@ document.getElementById('searchClear').addEventListener('click', ()=>{
   render();
   if(currentView==='calendar') renderCalendar();
   if(currentView==='summary') renderSummary();
+  if(currentView==='berth') renderBerth();
 });
 document.getElementById('sortSelect').addEventListener('change', e=>{
   currentSort = e.target.value;
   render();
 });
-document.querySelectorAll('.chip').forEach(chip=>{
+document.querySelectorAll('#statusChips .chip').forEach(chip=>{
   chip.addEventListener('click', ()=>{
-    document.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));
+    document.querySelectorAll('#statusChips .chip').forEach(c=>c.classList.remove('active'));
     chip.classList.add('active');
     currentFilter = chip.dataset.filter;
     render();
@@ -1520,28 +1597,174 @@ document.getElementById('summarySortSelect').addEventListener('change', e=>{
   renderSummary();
 });
 
+// ---------- Berth timeline ----------
+const BT_DAYS = 14, BT_LABEL_W = 150, BT_LANE_H = 26;
+const BT_MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const BT_DOW = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+let btPort = 'all';
+let btStart = btDefaultStart();
+
+function btDefaultStart(){
+  const d = new Date(NOW.getFullYear(), NOW.getMonth(), NOW.getDate());
+  d.setDate(d.getDate() - 1);
+  return d;
+}
+
+// Every THBKK/THLCH wharf in the data, so terminals with nothing booked
+// still get a row (that's free capacity, which is the point of the view).
+function berthWharves(){
+  const port = {};
+  Object.values(VESSEL_LEGS).forEach(ls => ls.forEach(l => {
+    if((l.pol === 'THBKK' || l.pol === 'THLCH') && l.wharf) port[l.wharf] = l.pol;
+  }));
+  return Object.keys(port).map(w => ({wharf:w, port:port[w]}))
+    .sort((a,b) => a.port === b.port ? a.wharf.localeCompare(b.wharf) : (a.port === 'THBKK' ? -1 : 1));
+}
+
+function berthCalls(){
+  const q = currentQuery.trim().toLowerCase();
+  const out = [];
+  Object.keys(VESSEL_LEGS).forEach(name => {
+    const v = VESSELS.find(x => x.vessel === name) || {};
+    if(q && !name.toLowerCase().includes(q) && !(v.vesselCode||'').toLowerCase().includes(q)) return;
+    VESSEL_LEGS[name].forEach(l => {
+      if((l.pol !== 'THBKK' && l.pol !== 'THLCH') || !l.wharf || !l.etd) return;
+      const etb = new Date(l.etb || l.eta).getTime();
+      const etd = new Date(l.etd).getTime();
+      if(!(etd > etb)) return;
+      const eta = l.eta ? Math.min(new Date(l.eta).getTime(), etb) : etb;
+      out.push({vessel:name, code:v.vesselCode, leg:l, port:l.pol, wharf:l.wharf, eta, etb, etd});
+    });
+  });
+  return out;
+}
+
+function renderBerth(){
+  const scroll = document.getElementById('btScroll');
+  if(scroll.clientWidth === 0) return;
+  const labelW = scroll.clientWidth < 600 ? 96 : BT_LABEL_W;
+  const winStart = btStart.getTime();
+  const winEnd = winStart + BT_DAYS * 864e5;
+  const dayW = Math.max(56, Math.floor((scroll.clientWidth - labelW - 2) / BT_DAYS));
+  const trackW = dayW * BT_DAYS;
+  const x = t => (t - winStart) * dayW / 864e5;
+  const nowT = NOW.getTime();
+
+  const last = new Date(winEnd - 1);
+  document.getElementById('btRangeLabel').textContent =
+    `${btStart.getDate()} ${BT_MON[btStart.getMonth()]} – ${last.getDate()} ${BT_MON[last.getMonth()]} ${last.getFullYear()}`;
+
+  const todayT = new Date(NOW.getFullYear(), NOW.getMonth(), NOW.getDate()).getTime();
+  let days = '';
+  for(let i=0;i<BT_DAYS;i++){
+    const d = new Date(btStart); d.setDate(d.getDate() + i);
+    const wk = d.getDay() === 0 || d.getDay() === 6;
+    days += `<div class="bt-day${wk?' weekend':''}${d.getTime()===todayT?' today':''}" style="width:${dayW}px">${BT_DOW[d.getDay()]} ${d.getDate()} ${BT_MON[d.getMonth()]}</div>`;
+  }
+
+  const calls = berthCalls().filter(c => c.etd > winStart && c.eta < winEnd);
+  let rows = '', lastPort = null;
+  berthWharves().filter(w => btPort === 'all' || w.port === btPort).forEach(w => {
+    if(w.port !== lastPort){
+      rows += `<div class="bt-group">${w.port} — ${w.port === 'THBKK' ? 'Bangkok' : 'Laem Chabang'}</div>`;
+      lastPort = w.port;
+    }
+    // Pack overlapping stays (ETB→ETD) into lanes; waiting time doesn't
+    // occupy the terminal, so it never forces a new lane.
+    const cs = calls.filter(c => c.wharf === w.wharf).sort((a,b) => a.etb - b.etb);
+    const laneEnds = [];
+    cs.forEach(c => {
+      let lane = laneEnds.findIndex(e => e <= c.etb);
+      if(lane === -1){ lane = laneEnds.length; laneEnds.push(0); }
+      laneEnds[lane] = c.etd; c.lane = lane;
+    });
+    const info = wharfInfo(w.wharf) || '';
+    const bars = cs.map(c => {
+      const top = 4 + c.lane * BT_LANE_H;
+      const left = x(c.etb), width = Math.max(4, x(c.etd) - left);
+      const change = findLegChange(c.vessel, c.leg.vygBound, c.port);
+      const cls = [
+        c.port === 'THBKK' ? 'port-bkk' : 'port-lch',
+        c.etd < nowT ? 'past' : '',
+        c.etb <= nowT && c.etd >= nowT ? 'current' : '',
+        change ? 'changed' : '',
+      ].filter(Boolean).join(' ');
+      const tip = [
+        `${c.vessel}${c.code ? ` (${c.code})` : ''} · ${c.leg.vygBound || '-'} · ${c.leg.service || ''}`,
+        `${c.port} ${c.wharf}${info ? ` — ${info}` : ''}`,
+        `ETA ${fmtDate(c.leg.eta)} · ETB ${fmtDate(c.leg.etb || c.leg.eta)} · ETD ${fmtDate(c.leg.etd)}`,
+        `Alongside ${Math.round((c.etd - c.etb) / 36e5)}h${c.etb > c.eta ? ` · waited ${Math.round((c.etb - c.eta) / 36e5)}h` : ''}`,
+        change ? `${change.deltaHours > 0 ? 'Delay' : 'Early'} ${Math.abs(change.deltaHours)}h vs previous schedule` : '',
+      ].filter(Boolean).join('\n');
+      const wait = c.etb > c.eta
+        ? `<div class="bt-wait" style="left:${x(c.eta)}px;width:${x(c.etb) - x(c.eta)}px;top:${top + BT_LANE_H/2 - 4}px"></div>` : '';
+      return `${wait}<div class="bt-bar ${cls}" style="left:${left}px;width:${width}px;top:${top}px;height:${BT_LANE_H - 6}px"
+        data-vessel="${escapeHtml(c.vessel)}" title="${escapeHtml(tip)}">${escapeHtml(c.code || c.vessel)} ${escapeHtml(c.leg.vygBound || '')}</div>`;
+    }).join('');
+    rows += `<div class="bt-row" style="height:${Math.max(1, laneEnds.length) * BT_LANE_H + 8}px">
+      <div class="bt-label" style="width:${labelW}px" title="${escapeHtml(wharfLabel(w.wharf))}"><b>${escapeHtml(w.wharf)}</b><span>${escapeHtml(info.split(' — ')[0])}</span></div>
+      <div class="bt-track" style="width:${trackW}px;background-size:${dayW}px 100%">${bars}</div>
+    </div>`;
+  });
+
+  const nowX = x(nowT);
+  scroll.innerHTML = `<div class="bt-inner" style="width:${labelW + trackW}px">
+    <div class="bt-head"><div class="bt-label bt-label-head" style="width:${labelW}px">Wharf</div><div class="bt-days">${days}</div></div>
+    ${rows}
+    ${nowX >= 0 && nowX <= trackW ? `<div class="bt-now" style="left:${labelW + nowX}px"></div>` : ''}
+  </div>`;
+
+  scroll.querySelectorAll('.bt-bar').forEach(b => b.addEventListener('click', () => {
+    expandedVessel = b.dataset.vessel;
+    setView('summary');
+    setTimeout(() => {
+      const el = document.querySelector('#summaryBody .summary-row.expanded');
+      if(el) el.scrollIntoView({behavior:'smooth', block:'start'});
+    }, 60);
+  }));
+}
+
+document.getElementById('btPrev').addEventListener('click', () => { btStart = new Date(btStart); btStart.setDate(btStart.getDate() - 7); renderBerth(); });
+document.getElementById('btNext').addEventListener('click', () => { btStart = new Date(btStart); btStart.setDate(btStart.getDate() + 7); renderBerth(); });
+document.getElementById('btToday').addEventListener('click', () => { btStart = btDefaultStart(); renderBerth(); });
+document.querySelectorAll('#btPortFilter .chip').forEach(chip => chip.addEventListener('click', () => {
+  document.querySelectorAll('#btPortFilter .chip').forEach(c => c.classList.remove('active'));
+  chip.classList.add('active');
+  btPort = chip.dataset.port;
+  renderBerth();
+}));
+let btResizeTimer = null;
+window.addEventListener('resize', () => {
+  clearTimeout(btResizeTimer);
+  btResizeTimer = setTimeout(() => { if(currentView === 'berth') renderBerth(); }, 150);
+});
+
 function setView(v){
   currentView = v;
   document.getElementById('viewBtnList').classList.toggle('active', v==='list');
   document.getElementById('viewBtnCalendar').classList.toggle('active', v==='calendar');
   document.getElementById('viewBtnSummary').classList.toggle('active', v==='summary');
+  document.getElementById('viewBtnBerth').classList.toggle('active', v==='berth');
   document.getElementById('statusChips').style.display = v==='list' ? '' : 'none';
   document.getElementById('metaRow').style.display = v==='list' ? '' : 'none';
   document.getElementById('cardGrid').style.display = v==='list' ? '' : 'none';
   document.getElementById('calendarView').style.display = v==='calendar' ? 'block' : 'none';
   document.getElementById('summaryView').style.display = v==='summary' ? 'block' : 'none';
+  document.getElementById('berthView').style.display = v==='berth' ? 'block' : 'none';
   if(v==='list'){
     document.getElementById('emptyState').style.display = lastRenderedList.length===0 ? 'block' : 'none';
   } else {
     document.getElementById('emptyState').style.display = 'none';
     if(v==='calendar') renderCalendar();
     if(v==='summary') renderSummary();
+    if(v==='berth') renderBerth();
   }
   initLegMaps();
 }
 document.getElementById('viewBtnList').addEventListener('click', () => setView('list'));
 document.getElementById('viewBtnCalendar').addEventListener('click', () => setView('calendar'));
 document.getElementById('viewBtnSummary').addEventListener('click', () => setView('summary'));
+document.getElementById('viewBtnBerth').addEventListener('click', () => setView('berth'));
 
 updateHeader();
 render();
