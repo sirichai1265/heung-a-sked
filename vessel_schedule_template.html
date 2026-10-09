@@ -375,7 +375,7 @@
     color:var(--teal);text-transform:uppercase;margin:2px 0 10px;
   }
   .detail-scroll{max-height:340px;overflow-y:auto;overflow-x:auto;border-radius:6px;}
-  .leg-map-wrap{margin-bottom:12px;}
+  .leg-map-wrap{margin-top:18px;}
   .leg-map{height:340px;border-radius:10px;border:1px solid var(--navy-line);overflow:hidden;background:#E8EEF2;z-index:0;}
   .leg-map-legend{
     display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:6px;
@@ -1008,6 +1008,15 @@ function renderDetailPanel(vesselName, hidePast){
   }).join('');
 
   return `<div class="detail-panel">
+    <div class="detail-title">Full Schedule — ${nameLabel} (${legs.length} legs)</div>
+    <div class="detail-scroll">
+      <table class="leg-table">
+        <thead><tr>
+          <th>Service</th><th>Voyage</th><th>Wharf</th><th>Route (POL → POD)</th><th>ETA</th><th>ETB</th><th>ETD</th><th>Note</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
     <div class="leg-map-wrap">
       <div class="detail-title">Voyage Map — ${nameLabel}</div>
       <div class="leg-map" data-vessel="${escapeHtml(vesselName)}" data-hide-past="${hidePast?1:0}"></div>
@@ -1018,15 +1027,6 @@ function renderDetailPanel(vesselName, hidePast){
         <span><i class="lm-dot lm-ship"></i>Est. position now</span>
         <span class="lm-note">${Object.keys(SEA_ROUTES).length ? 'Routes follow shipping lanes' : 'Straight lines between ports'}; position is estimated from the schedule, not live AIS</span>
       </div>
-    </div>
-    <div class="detail-title">Full Schedule — ${nameLabel} (${legs.length} legs)</div>
-    <div class="detail-scroll">
-      <table class="leg-table">
-        <thead><tr>
-          <th>Service</th><th>Voyage</th><th>Wharf</th><th>Route (POL → POD)</th><th>ETA</th><th>ETB</th><th>ETD</th><th>Note</th>
-        </tr></thead>
-        <tbody>${rows}</tbody>
-      </table>
     </div>
   </div>`;
 }
