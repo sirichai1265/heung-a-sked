@@ -1007,7 +1007,11 @@ function portTilesInOrder(v){
     calls.push({current:true, port:v.dockedLoc, wharf:v.dockedWharf, until:v.dockedUntil, nextDest:v.dockedNextDest, vygBound:v.dockedVygBound});
   }
   (v.portCalls||[]).forEach(pc => calls.push({current:false, port:pc.port, eta:pc.eta, wharf:pc.wharf, vygBound:pc.vygBound}));
-  const capped = calls.slice(0, v.tileCap || 3);
+  // Only the current voyage: keep calls sharing the first call's voyage
+  // number, ignoring the S/N bound letter (2611S and 2611N are one round).
+  const vygNo = c => (c.vygBound || '').replace(/[A-Z]+$/i, '');
+  const currentVyg = calls.length ? vygNo(calls[0]) : '';
+  const capped = calls.filter(c => !currentVyg || !vygNo(c) || vygNo(c) === currentVyg).slice(0, v.tileCap || 3);
   if(capped.length === 0){
     return portTile(null, null, 'ETA → THBKK / THLCH', null, null);
   }
