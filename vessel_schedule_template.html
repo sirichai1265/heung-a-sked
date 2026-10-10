@@ -530,12 +530,18 @@
   .bt-inner{position:relative;}
   .bt-head{display:flex;border-bottom:1px solid var(--navy-line);background:#FBFCFD;position:relative;}
   .bt-days{display:flex;}
-  .bt-day{flex:none;position:relative;height:56px;border-left:1px solid #DCE3EA;box-sizing:border-box;}
-  .bt-day b{position:absolute;left:10px;top:9px;font-family:'Barlow Semi Condensed', sans-serif;font-weight:700;font-size:15px;color:#1E3A5F;white-space:nowrap;}
-  .bt-day .dow{position:absolute;left:10px;top:31px;font-size:12px;color:#7D8B99;}
-  .bt-day .hr{position:absolute;top:33px;transform:translateX(-50%);font-family:'IBM Plex Mono', monospace;font-size:10.5px;color:#9AA7B4;}
+  .bt-day{flex:none;height:60px;border-left:1px solid #C3CDD8;box-sizing:border-box;display:flex;flex-direction:column;}
+  .bt-date{height:33px;display:flex;align-items:baseline;gap:7px;padding:9px 10px 0;white-space:nowrap;box-sizing:border-box;}
+  .bt-date b{font-family:'Barlow Semi Condensed', sans-serif;font-weight:700;font-size:15px;color:#1E3A5F;}
+  .bt-date span{font-size:12px;color:#7D8B99;}
+  .bt-slots{flex:1;display:flex;border-top:1px solid #E1E7ED;}
+  .bt-slots span{
+    flex:1;box-sizing:border-box;border-left:1px dashed #C9D3DD;padding:5px 0 0 4px;
+    font-family:'IBM Plex Mono', monospace;font-size:10.5px;color:#7D8B99;
+  }
+  .bt-slots span:first-child{border-left:none;}
   .bt-day.today{background:#EEF4F9;}
-  .bt-day.today b{color:#0F2A4A;}
+  .bt-day.today .bt-date b{color:#0F2A4A;}
   .bt-group{height:40px;background:#1E3A5F;color:#fff;display:flex;align-items:center;position:relative;z-index:1;}
   .bt-group span{position:sticky;left:0;padding:0 18px;white-space:nowrap;}
   .bt-group b{font-family:'Barlow Semi Condensed', sans-serif;font-weight:700;font-size:17px;letter-spacing:.06em;margin-right:12px;}
@@ -549,10 +555,18 @@
   .bt-label .code em{font-style:normal;color:#2F6FA8;margin-left:5px;}
   .bt-label .sub{font-family:'IBM Plex Mono', monospace;font-size:11.5px;color:#7D8B99;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .bt-label-head{font-family:'IBM Plex Mono', monospace;font-size:12px;color:#9AA7B4;justify-content:center;background:#FBFCFD;}
-  .bt-track{flex:none;position:relative;}
+  .bt-track{flex:none;position:relative;overflow:hidden;}
   .bt-grid{position:absolute;top:0;bottom:0;z-index:0;pointer-events:none;}
-  .bt-grid .d{position:absolute;top:0;bottom:0;border-left:1px solid #DCE3EA;}
-  .bt-grid .h{position:absolute;top:0;bottom:0;border-left:1px dashed #E7ECF1;}
+  .bt-grid .d{position:absolute;top:0;bottom:0;border-left:1px solid #C3CDD8;}
+  .bt-grid .h{position:absolute;top:0;bottom:0;border-left:1px dashed #D3DCE4;}
+  .bt-out{
+    position:absolute;z-index:1;height:48px;box-sizing:border-box;padding:5px 0;cursor:pointer;white-space:nowrap;
+    display:flex;flex-direction:column;justify-content:center;
+  }
+  .bt-out .l1{font-family:'Barlow Semi Condensed', sans-serif;font-weight:700;font-size:15px;line-height:19px;color:#1E3A5F;}
+  .bt-out .l2{font-family:'IBM Plex Mono', monospace;font-size:11px;line-height:16px;color:#5C6B7A;}
+  .bt-out.sailed{opacity:.5;}
+  .bt-out:hover .l1{text-decoration:underline;}
   .bt-bar{
     position:absolute;z-index:1;box-sizing:border-box;height:48px;border-radius:6px;padding:5px 9px;
     color:#fff;cursor:pointer;overflow:hidden;border:2px solid transparent;
@@ -561,9 +575,6 @@
   .bt-bar .l1{font-family:'Barlow Semi Condensed', sans-serif;font-weight:700;font-size:15px;line-height:19px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .bt-bar .l1 .svc{opacity:.72;margin-right:4px;}
   .bt-bar .l2{font-family:'IBM Plex Mono', monospace;font-size:11px;line-height:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:.95;}
-  .bt-bar.tight{padding:5px 3px;text-align:center;}
-  .bt-bar.tight .l1{font-size:13px;text-overflow:clip;}
-  .bt-bar.tight .l2{font-size:10px;text-overflow:clip;}
   .bt-bar.s{background:#2E8B57;border-color:#24704A;}
   .bt-bar.n{background:#C8443D;border-color:#A63631;}
   .bt-bar.both{background:linear-gradient(to right, #2E8B57 50%, #C8443D 50%);border-color:#24704A #A63631 #A63631 #24704A;}
@@ -800,7 +811,7 @@
       </div>
       <div class="bt-scroll" id="btScroll"></div>
     </div>
-    <div class="bt-foot">Each wharf row is a terminal with several berths, so stacked bars are vessels alongside at the same terminal at once, not a clash. Hover a bar for details, click it to open that vessel's schedule.</div>
+    <div class="bt-foot">Each wharf row is a terminal with several berths. Bars stack into extra lanes when vessels are alongside at the same terminal at once, or to keep a vessel's name readable next to a short call — not a clash. Hover a bar for details, click it to open that vessel's schedule.</div>
   </div>
 
   <div class="summary-view" id="summaryView" style="display:none;">
@@ -1649,6 +1660,12 @@ const BT_OPERATORS = {BKK01:'PAT', BKK04:'PAT', BKK02:'UNITHAI', LCH01:'ESCO', L
 let btPort = 'all';
 let btStart = btDefaultStart();
 let btScrollToNow = true;
+const BT_FONT_L1 = "700 15px 'Barlow Semi Condensed', sans-serif";
+const BT_FONT_L2 = "400 11px 'IBM Plex Mono', monospace";
+const btCtx = document.createElement('canvas').getContext('2d');
+const btTextW = (text, font) => { btCtx.font = font; return btCtx.measureText(text).width; };
+// Label widths are measured, so redo the layout once the web fonts arrive.
+if(document.fonts) document.fonts.ready.then(() => { if(currentView === 'berth') renderBerth(); });
 
 function btDefaultStart(){
   const d = new Date(NOW.getFullYear(), NOW.getMonth(), NOW.getDate());
@@ -1717,7 +1734,7 @@ function renderBerth(){
   if(scroll.clientWidth === 0) return;
   const narrow = scroll.clientWidth < 600;
   const labelW = narrow ? 128 : 210;
-  const dayW = narrow ? 110 : 150;
+  const dayW = narrow ? 144 : 192;   // 36 / 48 px per 6-hour slot
   const winStart = btStart.getTime();
   const winEnd = winStart + BT_DAYS * 864e5;
   const trackW = dayW * BT_DAYS;
@@ -1733,8 +1750,8 @@ function renderBerth(){
   for(let i=0;i<BT_DAYS;i++){
     const d = new Date(btStart); d.setDate(d.getDate() + i);
     days += `<div class="bt-day${d.getTime()===todayT?' today':''}" style="width:${dayW}px">
-      <b>${d.getDate()} ${BT_MON[d.getMonth()]}</b><span class="dow">${BT_DOW[d.getDay()]}</span>
-      <span class="hr" style="left:50%">12</span><span class="hr" style="left:75%">18</span></div>`;
+      <div class="bt-date"><b>${d.getDate()} ${BT_MON[d.getMonth()]}</b><span>${BT_DOW[d.getDay()]}</span></div>
+      <div class="bt-slots">${['00','06','12','18'].map(h => `<span>${h}</span>`).join('')}</div></div>`;
     grid += `<i class="d" style="left:${i*dayW}px"></i>` +
             [1,2,3].map(q => `<i class="h" style="left:${i*dayW + q*dayW/4}px"></i>`).join('');
   }
@@ -1748,21 +1765,32 @@ function renderBerth(){
       body += `<div class="bt-group" style="width:${labelW + trackW}px"><span><b>${BT_PORT_NAME[r.port].toUpperCase()}</b><i>${r.port} · ${n} call${n===1?'':'s'}</i></span></div>`;
       lastPort = r.port;
     }
-    // Pack overlapping stays (ETB→ETD) into lanes; waiting at anchorage
-    // doesn't occupy the terminal, so it never forces a new lane.
+    // Vessel name + voyage always shows: inside the bar when it fits,
+    // otherwise right after it. Lanes are packed on that full footprint
+    // (bar + outside label), so a label never runs into the next bar;
+    // waiting at anchorage doesn't occupy the terminal and is ignored.
     const cs = calls.filter(c => c.port === r.port && c.op === r.op).sort((a,b) => a.etb - b.etb);
-    const laneEnds = [];
-    cs.forEach(c => {
-      let lane = laneEnds.findIndex(e => e <= c.etb);
-      if(lane === -1){ lane = laneEnds.length; laneEnds.push(0); }
-      laneEnds[lane] = c.etd; c.lane = lane;
-    });
-    const bars = cs.map(c => {
+    const items = cs.map(c => {
       const l = c.leg;
-      const top = BT_ROW_PAD_TOP + c.lane * BT_LANE_H;
       const left = x(c.etb), width = Math.max(6, x(c.etd) - left);
-      const kind = btKind(c);
       const flag = btFlagText(l);
+      const name = `${c.vessel} ${l.vygBound || ''}`.trim();
+      const svc = l.service || '';
+      const l2 = `${c.wharf} · ${btT(c.etb)}→${btT(c.etd)}${flag ? ` · ${flag}` : ''}`;
+      const inside = width >= Math.max(btTextW(`${svc} ${name}`, BT_FONT_L1), btTextW(l2, BT_FONT_L2)) + 22;
+      const outW = Math.max(btTextW(name, BT_FONT_L1), btTextW(l2, BT_FONT_L2)) + 4;
+      return {c, l, left, width, flag, name, svc, l2, inside, end: inside ? left + width : left + width + 6 + outW};
+    });
+    const laneEnds = [];
+    items.forEach(it => {
+      let lane = laneEnds.findIndex(e => e <= it.left + 0.5);
+      if(lane === -1){ lane = laneEnds.length; laneEnds.push(0); }
+      laneEnds[lane] = it.end; it.lane = lane;
+    });
+    const bars = items.map(it => {
+      const {c, l, left, width, flag} = it;
+      const top = BT_ROW_PAD_TOP + it.lane * BT_LANE_H;
+      const kind = btKind(c);
       const change = findLegChange(c.vessel, l.vygBound, c.port);
       const info = wharfInfo(c.wharf);
       const tip = [
@@ -1775,18 +1803,15 @@ function renderBerth(){
       ].filter(Boolean).join('\n');
       const wait = c.etb > c.eta
         ? `<div class="bt-wait" style="left:${x(c.eta)}px;width:${x(c.etb) - x(c.eta)}px;top:${top - 12}px"></div>` : '';
-      // Short Laem Chabang calls (often 7-12h) are too narrow for the full
-      // text, so step down to code + voyage + times, then code + voyage.
-      const code = escapeHtml(c.code || c.vessel), vyg = escapeHtml(l.vygBound || '');
-      const hm = ms => { const d = new Date(ms); return `${btPad(d.getDate())}/${btPad(d.getHours())}`; };
-      const text = width >= 170
-        ? `<div class="l1"><span class="svc">${escapeHtml(l.service || '')}</span>${escapeHtml(c.vessel)} ${vyg}</div>
-           <div class="l2">${escapeHtml(c.wharf)} · ${btT(c.etb)}→${btT(c.etd)}${flag ? ` · ${flag}` : ''}</div>`
-        : width >= 80
-        ? `<div class="l1">${code} ${vyg}</div><div class="l2">${hm(c.etb)}→${hm(c.etd)}${flag ? ` ${flag}` : ''}</div>`
-        : `<div class="l1">${code}</div><div class="l2">${vyg}</div>`;
-      return `${wait}<div class="bt-bar ${kind}${c.etd < nowT ? ' sailed' : ''}${width < 80 ? ' tight' : ''}" style="left:${left}px;width:${width}px;top:${top}px"
-        data-vessel="${escapeHtml(c.vessel)}" title="${escapeHtml(tip)}">${text}</div>`;
+      const sailed = c.etd < nowT ? ' sailed' : '';
+      const attrs = `data-vessel="${escapeHtml(c.vessel)}" title="${escapeHtml(tip)}"`;
+      const bar = `<div class="bt-bar ${kind}${sailed}" style="left:${left}px;width:${width}px;top:${top}px" ${attrs}>`;
+      if(it.inside){
+        return `${wait}${bar}<div class="l1"><span class="svc">${escapeHtml(it.svc)}</span>${escapeHtml(it.name)}</div>
+          <div class="l2">${escapeHtml(it.l2)}</div></div>`;
+      }
+      return `${wait}${bar}</div><div class="bt-out${sailed}" style="left:${left + width + 6}px;top:${top}px" ${attrs}>
+        <div class="l1">${escapeHtml(it.name)}</div><div class="l2">${escapeHtml(it.l2)}</div></div>`;
     }).join('');
     const h = BT_ROW_PAD_TOP + Math.max(1, laneEnds.length) * BT_LANE_H - (BT_LANE_H - BT_BAR_H) + BT_ROW_PAD_BOTTOM + 10;
     body += `<div class="bt-row" style="height:${h}px">
@@ -1816,7 +1841,7 @@ function renderBerth(){
     btScrollToNow = false;
   }
 
-  scroll.querySelectorAll('.bt-bar').forEach(b => b.addEventListener('click', () => {
+  scroll.querySelectorAll('.bt-bar, .bt-out').forEach(b => b.addEventListener('click', () => {
     expandedVessel = b.dataset.vessel;
     setView('summary');
     setTimeout(() => {
