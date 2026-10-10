@@ -36,6 +36,7 @@ REQUIRES: pandas, xlrd (for legacy .xls), openpyxl
 
 import argparse
 import json
+import re
 import shutil
 import sys
 from pathlib import Path
@@ -237,7 +238,54 @@ def build_vessel_summary(df, now):
     return rows
 
 
+CALL_FLAG_COLS = ["Skip", "No D", "No L"]
+MANUAL_SKED_NAME = re.compile(r"^(\d{1,2})-(\d{1,2})(?:-(\d{3,4}))?-SKED\.xls$", re.I)
+
+
+def newest_manual_sked():
+    """Newest hand-made <month>-<day>[-<hhmm>]-SKED.xls in input/, by the date
+    in its name -- file mtimes are useless on a fresh CI checkout."""
+    today = bangkok_now()
+    best = None
+    for p in (SCRIPT_DIR / "input").glob("*-SKED.xls"):
+        m = MANUAL_SKED_NAME.match(p.name)
+        if not m:
+            continue
+        month, day, hhmm = int(m[1]), int(m[2]), int(m[3] or 0)
+        try:
+            d = datetime(today.year, month, day)
+        except ValueError:
+            continue
+        if d > today + timedelta(days=31):  # e.g. a December file read in January
+            d = d.replace(year=today.year - 1)
+        key = (d, hhmm)
+        if best is None or key > best[0]:
+            best = (key, p)
+    return best[1] if best else None
+
+
+def attach_call_flags(df):
+    """The Sinokor API has no Skip / No D / No L columns (REMARK is always
+    blank), so borrow them from the newest manual SKED.xls, matched on
+    vessel code + voyage/bound + port. Flags are per voyage, so a voyage
+    the manual file didn't cover simply gets none."""
+    if all(c in df.columns for c in CALL_FLAG_COLS):
+        return df
+    path = newest_manual_sked()
+    if path is None:
+        return df
+    m = pd.read_excel(path)
+    if not all(c in m.columns for c in CALL_FLAG_COLS + ["Vessel", "Vyg Bound", "POL"]):
+        return df
+    key = ["Vessel", "Vyg Bound", "POL"]
+    m = m[key + CALL_FLAG_COLS].drop_duplicates(key)
+    return df.drop(columns=[c for c in CALL_FLAG_COLS if c in df.columns]).merge(m, on=key, how="left")
+
+
 def build_legs(df):
+    df = attach_call_flags(df)
+    has_flags = all(c in df.columns for c in CALL_FLAG_COLS)
+    flag = lambda r, c: bool(has_flags and str(r[c]).strip().upper() == "Y")
     legs = {}
     for vessel, g in df.groupby("Vessel Name"):
         if vessel == "TO BE NOMINATED":
@@ -252,6 +300,7 @@ def build_legs(df):
                 "eta": r["ETA Date"].isoformat() if not pd.isna(r["ETA Date"]) else None,
                 "etb": r["ETB Date"].isoformat() if not pd.isna(r["ETB Date"]) else None,
                 "etd": r["ETD Date"].isoformat() if not pd.isna(r["ETD Date"]) else None,
+                "skip": flag(r, "Skip"), "noD": flag(r, "No D"), "noL": flag(r, "No L"),
             })
         legs[vessel] = rows
     return legs
