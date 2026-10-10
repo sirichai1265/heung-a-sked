@@ -522,6 +522,7 @@
   .bt-key-bkk{background:linear-gradient(to right, #2E8B57 50%, #C8443D 50%);}
   .bt-key-sailed{background:linear-gradient(to right, #B9DEC8 50%, #F1BCB7 50%);}
   .bt-key-skip{background:#8B98A6;border:2px solid #E08A2E;box-sizing:border-box;}
+  .bt-key-ext{background:linear-gradient(to right, #2E8B57 0 9px, transparent 9px), repeating-linear-gradient(135deg, #8CC7A5 0 3px, #B5DCC5 3px 6px);}
   .bt-key-wait{height:0;width:22px;border-top:2px dashed #9CC3E0;border-radius:0;}
   .bt-key-now{width:0;height:16px;border-left:2px solid #1E3A5F;border-radius:0;}
   .bt-foot{margin-top:8px;font-size:11px;color:var(--ink-dim);font-style:italic;opacity:.8;}
@@ -559,14 +560,6 @@
   .bt-grid{position:absolute;top:0;bottom:0;z-index:0;pointer-events:none;}
   .bt-grid .d{position:absolute;top:0;bottom:0;border-left:1px solid #C3CDD8;}
   .bt-grid .h{position:absolute;top:0;bottom:0;border-left:1px dashed #D3DCE4;}
-  .bt-out{
-    position:absolute;z-index:1;height:48px;box-sizing:border-box;padding:5px 0;cursor:pointer;white-space:nowrap;
-    display:flex;flex-direction:column;justify-content:center;
-  }
-  .bt-out .l1{font-family:'Barlow Semi Condensed', sans-serif;font-weight:700;font-size:15px;line-height:19px;color:#1E3A5F;}
-  .bt-out .l2{font-family:'IBM Plex Mono', monospace;font-size:11px;line-height:16px;color:#5C6B7A;}
-  .bt-out.sailed{opacity:.5;}
-  .bt-out:hover .l1{text-decoration:underline;}
   .bt-bar{
     position:absolute;z-index:1;box-sizing:border-box;height:48px;border-radius:6px;padding:5px 9px;
     color:#fff;cursor:pointer;overflow:hidden;border:2px solid transparent;
@@ -584,6 +577,7 @@
   .bt-bar.sailed.both{background:linear-gradient(to right, #B9DEC8 50%, #F1BCB7 50%);border-color:#A3D0B5 #E6A39D #E6A39D #A3D0B5;}
   .bt-bar.skip{background:#8B98A6;border-color:#E08A2E;}
   .bt-bar.skip.sailed{background:#C9D1D9;}
+  .bt-bar.ext:not(.sailed) .l1, .bt-bar.ext:not(.sailed) .l2{text-shadow:0 1px 2px rgba(0,0,0,0.5);}
   .bt-bar:hover{filter:brightness(1.07);z-index:3;}
   .bt-wait{position:absolute;z-index:1;height:0;border-top:2px dashed #9CC3E0;}
   .bt-wait::before{content:'';position:absolute;left:-4px;top:-5px;width:8px;height:8px;border-radius:50%;background:#9CC3E0;}
@@ -806,12 +800,13 @@
           <span><i class="bt-key bt-key-bkk"></i>Bangkok (Disch &amp; Load)</span>
           <span><i class="bt-key bt-key-sailed"></i>Sailed</span>
           <span><i class="bt-key bt-key-skip"></i>Skip / No discharge / No loading</span>
+          <span><i class="bt-key bt-key-ext"></i>Hatched: room for the name past ETD</span>
           <span><i class="bt-key bt-key-now"></i>Now</span>
         </div>
       </div>
       <div class="bt-scroll" id="btScroll"></div>
     </div>
-    <div class="bt-foot">Each wharf row is a terminal with several berths. Bars stack into extra lanes when vessels are alongside at the same terminal at once, or to keep a vessel's name readable next to a short call — not a clash. Hover a bar for details, click it to open that vessel's schedule.</div>
+    <div class="bt-foot">Each wharf row is a terminal with several berths. Bars stack into extra lanes when vessels are alongside at the same terminal at once, or when a short call's name needs the room — not a clash. On short calls the solid part is the real stay and the hatched part only makes room for the name; the ETB→ETD times on the bar are exact. Hover a bar for details, click it to open that vessel's schedule.</div>
   </div>
 
   <div class="summary-view" id="summaryView" style="display:none;">
@@ -1723,6 +1718,23 @@ function btKind(c){
   const b = (l.bound || (l.vygBound || '').slice(-1) || '').toUpperCase();
   return b === 'S' ? 's' : b === 'N' ? 'n' : 'both';
 }
+// Solid fill for the real stay (0..w px), then a hatched tint of the same
+// colour for the part of the bar that only exists to fit the name.
+const BT_TINTS = {
+  s:    {solid:'#2E8B57', a:'#8CC7A5', b:'#B5DCC5', sSolid:'#B9DEC8', sa:'#D3EBDD', sb:'#E8F5ED'},
+  n:    {solid:'#C8443D', a:'#E3958F', b:'#EFBDB9', sSolid:'#F1BCB7', sa:'#F6D3D0', sb:'#FBE8E6'},
+  skip: {solid:'#8B98A6', a:'#B4BEC8', b:'#D2D8DE', sSolid:'#C9D1D9', sa:'#DCE1E6', sb:'#EDF0F3'},
+};
+function btExtendedBg(kind, sailed, w){
+  const t = k => BT_TINTS[k];
+  const tail = t(kind === 'both' ? 'n' : kind);
+  const solid = sailed ? tail.sSolid : tail.solid;
+  const head = kind === 'both'
+    ? `linear-gradient(to right, ${sailed ? t('s').sSolid : t('s').solid} 0 ${w/2}px, ${solid} ${w/2}px ${w}px, transparent ${w}px)`
+    : `linear-gradient(to right, ${solid} 0 ${w}px, transparent ${w}px)`;
+  const [a, b] = sailed ? [tail.sa, tail.sb] : [tail.a, tail.b];
+  return `${head}, repeating-linear-gradient(135deg, ${a} 0 5px, ${b} 5px 10px)`;
+}
 function btFlagText(l){
   if(l.skip) return 'SKIP';
   if(l.noD && l.noL) return 'NO DISCH / NO LOAD';
@@ -1765,10 +1777,11 @@ function renderBerth(){
       body += `<div class="bt-group" style="width:${labelW + trackW}px"><span><b>${BT_PORT_NAME[r.port].toUpperCase()}</b><i>${r.port} · ${n} call${n===1?'':'s'}</i></span></div>`;
       lastPort = r.port;
     }
-    // Vessel name + voyage always shows: inside the bar when it fits,
-    // otherwise right after it. Lanes are packed on that full footprint
-    // (bar + outside label), so a label never runs into the next bar;
-    // waiting at anchorage doesn't occupy the terminal and is ignored.
+    // Vessel name + voyage always sits inside the bar. When a call is too
+    // short for the text, the bar runs on past ETD in a hatched tint just
+    // far enough to fit it (solid = the real stay; the times on the bar
+    // stay exact). Lanes are packed on that drawn width so bars never
+    // overlap; waiting at anchorage doesn't occupy the terminal.
     const cs = calls.filter(c => c.port === r.port && c.op === r.op).sort((a,b) => a.etb - b.etb);
     const items = cs.map(c => {
       const l = c.leg;
@@ -1777,9 +1790,10 @@ function renderBerth(){
       const name = `${c.vessel} ${l.vygBound || ''}`.trim();
       const svc = l.service || '';
       const l2 = `${c.wharf} · ${btT(c.etb)}→${btT(c.etd)}${flag ? ` · ${flag}` : ''}`;
-      const inside = width >= Math.max(btTextW(`${svc} ${name}`, BT_FONT_L1), btTextW(l2, BT_FONT_L2)) + 22;
-      const outW = Math.max(btTextW(name, BT_FONT_L1), btTextW(l2, BT_FONT_L2)) + 4;
-      return {c, l, left, width, flag, name, svc, l2, inside, end: inside ? left + width : left + width + 6 + outW};
+      // +26 = 2×9px padding + 2×2px border + a little slack for rounding.
+      const full = width >= Math.max(btTextW(`${svc} ${name}`, BT_FONT_L1), btTextW(l2, BT_FONT_L2)) + 26;
+      const drawW = full ? width : Math.max(width, Math.max(btTextW(name, BT_FONT_L1), btTextW(l2, BT_FONT_L2)) + 26);
+      return {c, l, left, width, drawW, flag, name, svc: full ? svc : '', l2, end: left + drawW};
     });
     const laneEnds = [];
     items.forEach(it => {
@@ -1803,15 +1817,13 @@ function renderBerth(){
       ].filter(Boolean).join('\n');
       const wait = c.etb > c.eta
         ? `<div class="bt-wait" style="left:${x(c.eta)}px;width:${x(c.etb) - x(c.eta)}px;top:${top - 12}px"></div>` : '';
-      const sailed = c.etd < nowT ? ' sailed' : '';
-      const attrs = `data-vessel="${escapeHtml(c.vessel)}" title="${escapeHtml(tip)}"`;
-      const bar = `<div class="bt-bar ${kind}${sailed}" style="left:${left}px;width:${width}px;top:${top}px" ${attrs}>`;
-      if(it.inside){
-        return `${wait}${bar}<div class="l1"><span class="svc">${escapeHtml(it.svc)}</span>${escapeHtml(it.name)}</div>
-          <div class="l2">${escapeHtml(it.l2)}</div></div>`;
-      }
-      return `${wait}${bar}</div><div class="bt-out${sailed}" style="left:${left + width + 6}px;top:${top}px" ${attrs}>
-        <div class="l1">${escapeHtml(it.name)}</div><div class="l2">${escapeHtml(it.l2)}</div></div>`;
+      const sailed = c.etd < nowT;
+      const ext = it.drawW > width + 0.5;
+      const style = `left:${left}px;width:${it.drawW}px;top:${top}px${ext ? ';background:' + btExtendedBg(kind, sailed, width) : ''}`;
+      return `${wait}<div class="bt-bar ${kind}${sailed ? ' sailed' : ''}${ext ? ' ext' : ''}" style="${style}"
+        data-vessel="${escapeHtml(c.vessel)}" title="${escapeHtml(tip)}">
+        <div class="l1">${it.svc ? `<span class="svc">${escapeHtml(it.svc)}</span>` : ''}${escapeHtml(it.name)}</div>
+        <div class="l2">${escapeHtml(it.l2)}</div></div>`;
     }).join('');
     const h = BT_ROW_PAD_TOP + Math.max(1, laneEnds.length) * BT_LANE_H - (BT_LANE_H - BT_BAR_H) + BT_ROW_PAD_BOTTOM + 10;
     body += `<div class="bt-row" style="height:${h}px">
@@ -1841,7 +1853,7 @@ function renderBerth(){
     btScrollToNow = false;
   }
 
-  scroll.querySelectorAll('.bt-bar, .bt-out').forEach(b => b.addEventListener('click', () => {
+  scroll.querySelectorAll('.bt-bar').forEach(b => b.addEventListener('click', () => {
     expandedVessel = b.dataset.vessel;
     setView('summary');
     setTimeout(() => {
