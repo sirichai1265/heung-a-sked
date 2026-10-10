@@ -158,7 +158,19 @@ def load_wharf_lookup(wharf_path):
 # Core transforms (mirrors the dashboard's own JS logic)
 # ---------------------------------------------------------------------------
 
+TH_PORTS = ("THBKK", "THLCH")
+
+
+def only_th_vessels(df):
+    """Dashboard shows only vessels that call THBKK or THLCH somewhere in the
+    data. Applied at display time, not to sked_current.xlsx, so the fetch
+    keeps tracking the others and they reappear once they call Thailand."""
+    keep = df.loc[df["POL"].isin(TH_PORTS), "Vessel Name"].unique()
+    return df[df["Vessel Name"].isin(keep)]
+
+
 def build_vessel_summary(df, now):
+    df = only_th_vessels(df)
     rows = []
     for vessel, g in df.groupby("Vessel Name"):
         if vessel == "TO BE NOMINATED":
@@ -283,7 +295,7 @@ def attach_call_flags(df):
 
 
 def build_legs(df):
-    df = attach_call_flags(df)
+    df = attach_call_flags(only_th_vessels(df))
     has_flags = all(c in df.columns for c in CALL_FLAG_COLS)
     flag = lambda r, c: bool(has_flags and str(r[c]).strip().upper() == "Y")
     legs = {}
@@ -307,6 +319,7 @@ def build_legs(df):
 
 
 def build_schedule_changes(df_old, df_new):
+    df_new = only_th_vessels(df_new)
     old_map = {}
     for _, r in df_old.iterrows():
         if pd.isna(r["Vyg Bound"]) or pd.isna(r["POL"]) or pd.isna(r["Vessel Name"]):
