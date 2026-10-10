@@ -812,6 +812,11 @@
   </div>
 
   <div class="summary-view" id="summaryView" style="display:none;">
+    <div class="chip-row cal-port-filter" id="sumPortFilter">
+      <div class="chip active" data-port="all">ALL</div>
+      <div class="chip chip-bkk" data-port="THBKK">THBKK</div>
+      <div class="chip chip-lch" data-port="THLCH">THLCH</div>
+    </div>
     <div class="meta-row">
       <span id="summaryCount">31 vessels</span>
       <span>SORT
@@ -824,7 +829,7 @@
     <div class="summary-scroll">
       <table class="leg-table summary-table">
         <thead><tr>
-          <th>Vessel</th><th>Voyage</th><th>Service</th><th>Status</th><th>Location</th><th>Since / ETA</th>
+          <th>Vessel</th><th>Voyage</th><th>Service</th><th>Status</th><th>Location</th><th id="summaryWhenHead">Since / ETA</th>
         </tr></thead>
         <tbody id="summaryBody"></tbody>
       </table>
@@ -1579,6 +1584,22 @@ document.querySelectorAll('#calPortFilter .chip').forEach(chip => {
 });
 
 let summarySort = 'location';
+let summaryPort = 'all';
+
+// With a port picked, Summary lists vessels alongside there now or with an
+// upcoming call there, and its last column becomes that port's timing.
+const atPortNow = (v, p) => v.status === 'docked' && v.dockedLoc === p;
+const nextEtaAt = (v, p) => p === 'THBKK' ? v.bkkEta : v.lchEta;
+function summaryPortKey(v, p){
+  if(atPortNow(v, p)) return new Date(v.dockedSince || 0).getTime();
+  const eta = nextEtaAt(v, p);
+  return eta ? new Date(eta).getTime() : Infinity;
+}
+function summaryPortWhenText(v, p){
+  if(atPortNow(v, p)) return `<b>Alongside</b> since ${fmtDate(v.dockedSince)}`;
+  const eta = nextEtaAt(v, p);
+  return eta ? `ETA ${fmtDate(eta)}` : '—';
+}
 
 function summaryLocationText(v){
   if(v.status === 'docked'){
@@ -1599,13 +1620,19 @@ function summarySinceEtaText(v){
 
 function renderSummary(){
   const q = currentQuery.toLowerCase();
+  const p = summaryPort;
   let list = VESSELS.filter(v => v.vessel.toLowerCase().includes(q) || (v.vesselCode||'').toLowerCase().includes(q));
+  if(p !== 'all') list = list.filter(v => atPortNow(v, p) || nextEtaAt(v, p));
   // "Location (TH first)" reuses earliestPortDate(): vessels alongside at
   // THBKK/THLCH sort first, then everyone else by their next TH arrival.
+  // With a port picked it's the same idea for that port only.
   list = summarySort === 'name'
     ? list.slice().sort((a,b)=> a.vessel.localeCompare(b.vessel))
+    : p !== 'all'
+    ? list.slice().sort((a,b)=> summaryPortKey(a, p) - summaryPortKey(b, p))
     : list.slice().sort((a,b)=> earliestPortDate(a) - earliestPortDate(b));
   document.getElementById('summaryCount').textContent = `${list.length} vessels`;
+  document.getElementById('summaryWhenHead').textContent = p === 'all' ? 'Since / ETA' : `At ${p}`;
   document.getElementById('summaryBody').innerHTML = list.map(v => {
     const expanded = expandedVessel === v.vessel;
     const detailRow = expanded
@@ -1619,7 +1646,7 @@ function renderSummary(){
       <td>${escapeHtml(v.service||'-')}</td>
       <td>${statusPill(v)}</td>
       <td>${summaryLocationText(v)}</td>
-      <td>${summarySinceEtaText(v)}</td>
+      <td>${p === 'all' ? summarySinceEtaText(v) : summaryPortWhenText(v, p)}</td>
     </tr>
     ${detailRow}`;
   }).join('');
@@ -1642,6 +1669,12 @@ document.getElementById('summarySortSelect').addEventListener('change', e=>{
   summarySort = e.target.value;
   renderSummary();
 });
+document.querySelectorAll('#sumPortFilter .chip').forEach(chip => chip.addEventListener('click', () => {
+  document.querySelectorAll('#sumPortFilter .chip').forEach(c => c.classList.remove('active'));
+  chip.classList.add('active');
+  summaryPort = chip.dataset.port;
+  renderSummary();
+}));
 
 // ---------- Berth timeline ----------
 const BT_DAYS = 14;
