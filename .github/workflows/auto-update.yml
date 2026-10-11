@@ -13,14 +13,12 @@ name: Auto-update vessel schedule
 
 on:
   schedule:
-    # Every hour at :12 past. GitHub Actions scheduled runs are just
-    # unreliable in practice -- even after offsetting off the top of the
-    # hour, slots were still arriving 1-5+ hours late or not firing at
-    # all some days (checked gh run history 9/25-9/28). Running hourly
-    # instead of 3x/day doesn't fix GitHub's delay, but it means a delay
-    # costs at most ~1h of staleness instead of up to a full missed
-    # 4-hour slot, and a bad/skipped hour just gets caught by the next.
-    - cron: '12 * * * *'
+    # 07:00, 13:00, 18:00 Bangkok time (UTC+7) = 00:00, 06:00, 11:00 UTC,
+    # as requested by ops. GitHub only treats these as earliest start
+    # times: in practice runs land minutes to a few hours late, or get
+    # skipped (seen 9/25-10/10), so use "Run workflow" / a manual update
+    # when fresh data is needed at an exact time.
+    - cron: '0 0,6,11 * * *'
   workflow_dispatch: {}   # lets a human trigger a run manually from the Actions tab
 
 permissions:
