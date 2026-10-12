@@ -14,13 +14,20 @@ name: Auto-update vessel schedule
 on:
   schedule:
     # Times are UTC; Bangkok is UTC+7. GitHub only treats them as earliest
-    # start times -- runs can land late or be skipped -- hence the backups.
+    # start times and in practice fired just 18% of an hourly schedule
+    # (9/29-10/10), so the real triggers are external: Windows Task
+    # Scheduler on the ops PC and an online cron service, both calling
+    # workflow_dispatch with scheduled=true. These crons are the fallback.
     # Main:   07:00, 12:00, 17:00, 22:00 Bangkok
     - cron: '0 0,5,10,15 * * *'
-    # Backup: 08:00, 13:00, 18:00, 23:00 Bangkok. Only does the update if
-    # the main slot hasn't already succeeded (see the "gate" step).
+    # Backup: 08:00, 13:00, 18:00, 23:00 Bangkok
     - cron: '0 1,6,11,16 * * *'
-  workflow_dispatch: {}   # lets a human trigger a run manually from the Actions tab
+  workflow_dispatch:
+    inputs:
+      scheduled:
+        description: "true = automated trigger: skip if this slot was already updated"
+        required: false
+        default: 'false'
 
 permissions:
   contents: write
@@ -34,13 +41,17 @@ jobs:
   update:
     runs-on: ubuntu-latest
     steps:
-      - name: Skip backup slot if its main slot already succeeded
+      # Several automated triggers aim at each slot (GitHub crons, Task
+      # Scheduler, online cron); the first to succeed does the update and
+      # the rest exit here. A person running it by hand always goes ahead.
+      - name: Skip if this slot was already updated
         id: gate
         env:
           GH_TOKEN: ${{ github.token }}
-          TRIGGER: ${{ github.event.schedule }}
+          EVENT: ${{ github.event_name }}
+          SCHEDULED: ${{ inputs.scheduled }}
         run: |
-          if [ "$TRIGGER" != "0 1,6,11,16 * * *" ]; then
+          if [ "$EVENT" != "schedule" ] && [ "$SCHEDULED" != "true" ]; then
             echo "run=true" >> "$GITHUB_OUTPUT"; exit 0
           fi
           gh run list --repo "$GITHUB_REPOSITORY" --workflow auto-update.yml --limit 30 \
@@ -50,7 +61,7 @@ jobs:
           now = dt.datetime.now(dt.timezone.utc)
           today = now.replace(minute=0, second=0, microsecond=0)
           # Latest main slot (00/05/10/15 UTC) at or before now -- the one
-          # this backup covers, even if GitHub fired the backup late.
+          # this run covers, even if its trigger fired late.
           slots = [today.replace(hour=h) for h in (0, 5, 10, 15) if today.replace(hour=h) <= now]
           slot = max(slots) if slots else (today - dt.timedelta(days=1)).replace(hour=15)
           me = int(os.environ["GITHUB_RUN_ID"])
@@ -59,9 +70,9 @@ jobs:
                   if r["databaseId"] != me and r["conclusion"] == "success"
                   and dt.datetime.fromisoformat(r["createdAt"].replace("Z", "+00:00")) >= slot]
           if done:
-              print(f"Main slot {slot:%H:%M} UTC already updated by run {done[0]} -- skipping backup")
+              print(f"Slot {slot:%H:%M} UTC already updated by run {done[0]} -- skipping")
           else:
-              print(f"No successful run since main slot {slot:%H:%M} UTC -- running backup")
+              print(f"No successful run since slot {slot:%H:%M} UTC -- updating")
           with open(os.environ["GITHUB_OUTPUT"], "a") as f:
               f.write(f"run={'false' if done else 'true'}\n")
           PY
