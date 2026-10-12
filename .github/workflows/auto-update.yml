@@ -13,16 +13,18 @@ name: Auto-update vessel schedule
 
 on:
   schedule:
-    # 07:00, 13:00, 18:00 Bangkok time (UTC+7) = 00:00, 06:00, 11:00 UTC,
-    # as requested by ops. GitHub only treats these as earliest start
-    # times: in practice runs land minutes to a few hours late, or get
-    # skipped (seen 9/25-10/10), so use "Run workflow" / a manual update
-    # when fresh data is needed at an exact time.
-    - cron: '0 0,6,11 * * *'
+    # Times are UTC; Bangkok is UTC+7. GitHub only treats them as earliest
+    # start times -- runs can land late or be skipped -- hence the backups.
+    # Main:   07:00, 12:00, 17:00, 22:00 Bangkok
+    - cron: '0 0,5,10,15 * * *'
+    # Backup: 08:00, 13:00, 18:00, 23:00 Bangkok. Only does the update if
+    # the main slot hasn't already succeeded (see the "gate" step).
+    - cron: '0 1,6,11,16 * * *'
   workflow_dispatch: {}   # lets a human trigger a run manually from the Actions tab
 
 permissions:
   contents: write
+  actions: read   # the backup gate lists this workflow's recent runs
 
 concurrency:
   group: auto-update
@@ -32,17 +34,53 @@ jobs:
   update:
     runs-on: ubuntu-latest
     steps:
+      - name: Skip backup slot if its main slot already succeeded
+        id: gate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TRIGGER: ${{ github.event.schedule }}
+        run: |
+          if [ "$TRIGGER" != "0 1,6,11,16 * * *" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          gh run list --repo "$GITHUB_REPOSITORY" --workflow auto-update.yml --limit 30 \
+            --json databaseId,conclusion,createdAt > "$RUNNER_TEMP/runs.json"
+          python3 - <<'PY'
+          import datetime as dt, json, os
+          now = dt.datetime.now(dt.timezone.utc)
+          today = now.replace(minute=0, second=0, microsecond=0)
+          # Latest main slot (00/05/10/15 UTC) at or before now -- the one
+          # this backup covers, even if GitHub fired the backup late.
+          slots = [today.replace(hour=h) for h in (0, 5, 10, 15) if today.replace(hour=h) <= now]
+          slot = max(slots) if slots else (today - dt.timedelta(days=1)).replace(hour=15)
+          me = int(os.environ["GITHUB_RUN_ID"])
+          runs = json.load(open(os.path.join(os.environ["RUNNER_TEMP"], "runs.json")))
+          done = [r["databaseId"] for r in runs
+                  if r["databaseId"] != me and r["conclusion"] == "success"
+                  and dt.datetime.fromisoformat(r["createdAt"].replace("Z", "+00:00")) >= slot]
+          if done:
+              print(f"Main slot {slot:%H:%M} UTC already updated by run {done[0]} -- skipping backup")
+          else:
+              print(f"No successful run since main slot {slot:%H:%M} UTC -- running backup")
+          with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+              f.write(f"run={'false' if done else 'true'}\n")
+          PY
+
       - uses: actions/checkout@v4
+        if: steps.gate.outputs.run == 'true'
 
       - uses: actions/setup-python@v5
+        if: steps.gate.outputs.run == 'true'
         with:
           python-version: '3.11'
 
       - name: Install dependencies
+        if: steps.gate.outputs.run == 'true'
         run: pip install pandas openpyxl xlrd requests searoute
 
       - name: Pull latest schedule from the Sinokor/Heung-A API
         id: fetch
+        if: steps.gate.outputs.run == 'true'
         run: |
           STAMP=$(date -u +'%Y%m%d-%H%M')
           OUT="input/auto-${STAMP}-SKED.xlsx"
@@ -50,11 +88,13 @@ jobs:
           python fetch_sinokor_schedule.py --out "$OUT" --months-forward 2
 
       - name: Regenerate dashboard
+        if: steps.gate.outputs.run == 'true'
         run: |
           python generate_vessel_schedule.py --full "${{ steps.fetch.outputs.out }}"
           cp "Vessel Schedule.html" index.html
 
       - name: Commit and push if anything changed
+        if: steps.gate.outputs.run == 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -63,11 +103,9 @@ jobs:
             echo "No changes -- nothing to push"
           else
             git commit -m "Auto-update (full): $(basename "${{ steps.fetch.outputs.out }}" .xlsx)"
-            # Someone else (a colleague's manual update, or a person
-            # pushing while this run was in flight) can land a commit on
-            # main first -- retry with a rebase instead of failing the
-            # whole run, since that becomes more likely now that this
-            # runs hourly.
+            # Someone else (a colleague's manual update, a person pushing
+            # while this run was in flight) can land a commit on main
+            # first -- retry with a rebase instead of failing the run.
             for i in 1 2 3 4 5; do
               if git push; then break; fi
               echo "push rejected (attempt $i), pulling --rebase and retrying..."
