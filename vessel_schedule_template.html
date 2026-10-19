@@ -144,6 +144,13 @@
     flex:1 1 280px;
     min-width:220px;
   }
+  .service-select{
+    flex:0 0 auto;background:var(--navy-panel);border:1px solid var(--navy-line);color:var(--ink);
+    font-family:'IBM Plex Mono', monospace;font-size:13px;padding:11px 12px;border-radius:10px;
+    outline:none;cursor:pointer;box-shadow:0 1px 2px rgba(16,32,48,0.04);
+  }
+  .service-select:focus{border-color:var(--teal);box-shadow:0 0 0 3px rgba(47,125,117,0.13);}
+  .service-select.on{border-color:var(--teal);background:var(--teal-soft);color:var(--teal);font-weight:600;}
   .search-box input{
     width:100%;
     background:var(--navy-panel);
@@ -485,7 +492,7 @@
   .source-status-row .data-status{margin-left:0;}
 
   .view-switch{
-    display:flex;gap:8px;margin:4px 0 16px;
+    display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 16px;
   }
   .view-btn{
     display:inline-flex;align-items:center;gap:7px;
@@ -717,6 +724,9 @@
       <input id="searchInput" type="text" placeholder="Search vessel name / code… (e.g. KMTC, KMBK)" autocomplete="off">
       <button class="search-clear" id="searchClear" type="button" aria-label="Clear search">×</button>
     </div>
+    <select class="service-select" id="serviceSelect" aria-label="Filter by service">
+      <option value="all">All services</option>
+    </select>
     <div class="chip-row" id="statusChips">
       <div class="chip active" data-filter="all">ALL</div>
       <div class="chip" data-filter="docked">ALONGSIDE</div>
@@ -1310,12 +1320,42 @@ function initLegMaps(){
   });
 }
 
+// ---------- Service filter (shared by List / Calendar / Summary / Berth) ----------
+let currentService = 'all';
+// A vessel's services = those on its upcoming legs (else its listed one), so
+// a vessel part-way through a service swap shows under both services.
+function vesselServices(v){
+  const nowT = NOW.getTime();
+  const s = new Set((VESSEL_LEGS[v.vessel] || [])
+    .filter(l => l.service && l.etd && new Date(l.etd).getTime() >= nowT).map(l => l.service));
+  if(!s.size && v.service) s.add(v.service);
+  return s;
+}
+function matchesService(v){ return currentService === 'all' || vesselServices(v).has(currentService); }
+function legMatchesService(l){ return currentService === 'all' || l.service === currentService; }
+function initServiceSelect(){
+  const counts = {};
+  VESSELS.forEach(v => vesselServices(v).forEach(s => { counts[s] = (counts[s] || 0) + 1; }));
+  const sel = document.getElementById('serviceSelect');
+  sel.innerHTML = `<option value="all">All services</option>` + Object.keys(counts).sort()
+    .map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)} (${counts[s]})</option>`).join('');
+  sel.addEventListener('change', () => {
+    currentService = sel.value;
+    sel.classList.toggle('on', currentService !== 'all');
+    expandedVessel = null;
+    render();
+    if(currentView === 'calendar') renderCalendar();
+    if(currentView === 'summary') renderSummary();
+    if(currentView === 'berth') renderBerth();
+  });
+}
+
 function render(){
   renderStats();
   let list = VESSELS.filter(v => {
     const q = currentQuery.toLowerCase();
     return v.vessel.toLowerCase().includes(q) || (v.vesselCode||'').toLowerCase().includes(q);
-  });
+  }).filter(matchesService);
 
   if(currentFilter === 'docked') list = list.filter(v=>v.status==='docked');
   if(currentFilter === 'transit') list = list.filter(v=>v.status==='transit');
@@ -1467,7 +1507,7 @@ function buildPortCallIndex(){
       const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
       (map[key] = map[key] || []).push({
         vessel:name, code: vObj ? vObj.vesselCode : null,
-        port:l.pol, eta:l.eta, wharf:l.wharf, vygBound:l.vygBound,
+        port:l.pol, eta:l.eta, wharf:l.wharf, vygBound:l.vygBound, service:l.service,
       });
     });
   });
@@ -1478,11 +1518,12 @@ function buildPortCallIndex(){
 function filteredPortCallIndex(){
   const idx = buildPortCallIndex();
   const q = currentQuery.trim().toLowerCase();
-  if(!q && calPort==='all') return idx;
+  if(!q && calPort==='all' && currentService==='all') return idx;
   const out = {};
   Object.keys(idx).forEach(k=>{
     let arr = idx[k];
     if(calPort !== 'all') arr = arr.filter(e => e.port === calPort);
+    if(currentService !== 'all') arr = arr.filter(legMatchesService);
     if(q) arr = arr.filter(e => e.vessel.toLowerCase().includes(q) || (e.code||'').toLowerCase().includes(q));
     if(arr.length) out[k] = arr;
   });
@@ -1625,7 +1666,8 @@ function summarySinceEtaText(v){
 function renderSummary(){
   const q = currentQuery.toLowerCase();
   const p = summaryPort;
-  let list = VESSELS.filter(v => v.vessel.toLowerCase().includes(q) || (v.vesselCode||'').toLowerCase().includes(q));
+  let list = VESSELS.filter(v => v.vessel.toLowerCase().includes(q) || (v.vesselCode||'').toLowerCase().includes(q))
+    .filter(matchesService);
   if(p !== 'all') list = list.filter(v => atPortNow(v, p) || nextEtaAt(v, p));
   // "Location (TH first)" reuses earliestPortDate(): vessels alongside at
   // THBKK/THLCH sort first, then everyone else by their next TH arrival.
@@ -1737,7 +1779,7 @@ function berthCalls(){
     const v = VESSELS.find(x => x.vessel === name) || {};
     if(q && !name.toLowerCase().includes(q) && !(v.vesselCode||'').toLowerCase().includes(q)) return;
     VESSEL_LEGS[name].forEach(l => {
-      if((l.pol !== 'THBKK' && l.pol !== 'THLCH') || !l.wharf || !l.etd) return;
+      if((l.pol !== 'THBKK' && l.pol !== 'THLCH') || !l.wharf || !l.etd || !legMatchesService(l)) return;
       const etb = new Date(l.etb || l.eta).getTime();
       const etd = new Date(l.etd).getTime();
       if(!(etd > etb)) return;
@@ -1935,6 +1977,7 @@ document.getElementById('viewBtnSummary').addEventListener('click', () => setVie
 document.getElementById('viewBtnBerth').addEventListener('click', () => setView('berth'));
 
 updateHeader();
+initServiceSelect();
 render();
 </script>
 </body>

@@ -214,8 +214,12 @@ def build_vessel_summary(df, now):
         # Long-haul services (ANX, PCI2) space their calls a month or more
         # apart, so showing several just clutters the card with dates far
         # in the future -- only show the single next one for those.
-        service = g.iloc[0]["Service"]
-        tile_cap = 1 if service in ("ANX", "PCI2") else 3
+        # Service of the leg the vessel is on now (alongside, else the next
+        # call, else its last known) -- not its oldest row, which can be an
+        # earlier voyage on a service it has since left.
+        cur_leg = docked.iloc[-1] if len(docked) else (fut2.iloc[0] if len(fut2) else g.iloc[-1])
+        service = cur_leg["Service"]
+        tile_cap = 1 if service in ("ANX", "PCI", "PCI2") else 3
         upcoming = fut2[fut2["POL"].isin(["THBKK", "THLCH"])].sort_values("ETA Date").head(tile_cap)
         port_calls = [{
             "port": r["POL"],

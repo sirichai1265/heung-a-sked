@@ -1,10 +1,12 @@
 {
   "AEFJR": {"name": "Fujairah", "lat": 25.17, "lon": 56.36},
   "AEKLF": {"name": "Khalifa Port, Abu Dhabi", "lat": 24.81, "lon": 54.65},
+  "CNDLC": {"name": "Dalian", "lat": 38.96, "lon": 121.88},
   "CNNGB": {"name": "Ningbo", "lat": 29.93, "lon": 121.85},
   "CNSHA": {"name": "Shanghai", "lat": 31.36, "lon": 121.60},
   "CNSHK": {"name": "Shekou", "lat": 22.48, "lon": 113.90},
   "CNTAO": {"name": "Qingdao", "lat": 36.02, "lon": 120.20},
+  "CNTSN": {"name": "Tianjin", "lat": 38.97, "lon": 117.78},
   "CNXMN": {"name": "Xiamen", "lat": 24.45, "lon": 118.07},
   "HKHKG": {"name": "Hong Kong", "lat": 22.33, "lon": 114.12},
   "IDJKT": {"name": "Jakarta", "lat": -6.10, "lon": 106.88},
