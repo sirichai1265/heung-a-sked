@@ -258,7 +258,10 @@ def build_vessel_summary(df, now):
             "portCalls": port_calls,
             "tileCap": tile_cap,
         })
-    return rows
+    # Only vessels with a TH leg still ahead (or alongside / heading there
+    # now); ones whose THBKK / THLCH calls are all behind them drop out.
+    return [r for r in rows
+            if r["bkkEta"] or r["lchEta"] or r["dockedLoc"] in TH_PORTS or r["transitTo"] in TH_PORTS]
 
 
 CALL_FLAG_COLS = ["Skip", "No D", "No L"]
@@ -744,7 +747,8 @@ def main():
 
     print("[4/5] Building vessel summary, legs, and schedule changes ...")
     vessels = build_vessel_summary(df_today, now)
-    legs = build_legs(df_today)
+    shown = {v["vessel"] for v in vessels}
+    legs = {k: v for k, v in build_legs(df_today).items() if k in shown}
     changes = build_schedule_changes(df_yesterday, df_today) if df_yesterday is not None else {}
     call_changes = build_change_sets(df_yesterday, df_today, now, yesterday_name)
     import weekly_closing  # imports this module back, so not at the top
