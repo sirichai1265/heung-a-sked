@@ -619,7 +619,7 @@
   .ch-title{font-weight:700;font-size:15px;color:var(--bt-heading);}
   .ch-count{font-family:'IBM Plex Mono', monospace;font-size:11.5px;color:var(--ink-dim);}
   .ch-scroll{overflow-x:auto;}
-  table.ch-table{width:100%;min-width:780px;border-collapse:collapse;font-size:13px;}
+  table.ch-table{width:100%;min-width:600px;border-collapse:collapse;font-size:13px;}
   .ch-table th{
     background:var(--slate-soft);color:var(--ink);text-align:left;padding:9px 12px;
     font-size:11.5px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;border-bottom:1px solid var(--navy-line);
@@ -631,7 +631,6 @@
   .ch-old{color:var(--paper-dim);text-decoration:line-through;font-family:'IBM Plex Mono', monospace;font-size:12px;}
   .ch-arrow{color:var(--ink-dim);margin:0 3px;}
   .ch-val{font-family:'IBM Plex Mono', monospace;font-size:12.5px;font-weight:600;color:var(--ink);}
-  .ch-cut{font-family:'IBM Plex Mono', monospace;font-size:12.5px;font-weight:600;color:var(--ch-red);}
   .ch-none{color:var(--paper-dim);}
   .ch-k{font-weight:700;font-size:12.5px;letter-spacing:0.02em;}
   .ch-k.delayed{color:var(--ch-red);}
@@ -973,12 +972,12 @@
       <div class="ch-head"><div class="ch-title" id="chTitle"></div><div class="ch-count" id="chCount"></div></div>
       <div class="ch-scroll">
         <table class="ch-table">
-          <thead><tr><th>Port</th><th>Vessel / Voy</th><th>Change</th><th>ETB</th><th>ETD</th><th>DRY</th><th>RF</th></tr></thead>
+          <thead><tr><th>Port</th><th>Vessel / Voy</th><th>Change</th><th>ETB</th><th>ETD</th></tr></thead>
           <tbody id="chBody"></tbody>
         </table>
       </div>
     </div>
-    <div class="bt-foot">DRY / RF cut-offs are worked out from ETB: THBKK = ETB − 12h / − 6h, THLCH = ETB − 24h / − 12h. Click a row to open that vessel's schedule.</div>
+    <div class="bt-foot">Click a row to open that vessel's schedule.</div>
   </div>
 
   <div class="summary-view" id="summaryView" style="display:none;">
@@ -1947,7 +1946,6 @@ document.querySelectorAll('#sumPortFilter .chip').forEach(chip => chip.addEventL
 // ---------- Changes (ETB / ETD moves between two snapshots) ----------
 // CALL_CHANGES holds one row set per baseline (last update / 24h / 7d);
 // each row is a TH port call that moved, was removed, or newly appeared.
-const CH_CUTOFF_HOURS = {THBKK: {dry: 12, rf: 6}, THLCH: {dry: 24, rf: 12}};
 const CH_KIND_LABEL = {delayed: 'DELAYED', advanced: 'ADVANCED', removed: 'REMOVED', new: 'NEW'};
 let changesBase = CALL_CHANGES.length ? CALL_CHANGES[0].id : null;
 let changesPort = 'all';
@@ -1955,10 +1953,6 @@ let changesPort = 'all';
 const chPad = n => String(n).padStart(2, '0');
 function chFmt(d){ return d ? `${chPad(d.getDate())}/${chPad(d.getHours())}${chPad(d.getMinutes())}` : null; }
 function chDate(iso){ return iso ? new Date(iso) : null; }
-function chCutoff(iso, port, kind){
-  const d = chDate(iso);
-  return d ? new Date(d.getTime() - CH_CUTOFF_HOURS[port][kind] * 3600000) : null;
-}
 function chDelta(h){
   const sign = h > 0 ? '+' : '−', a = Math.abs(h);
   if(a < 48) return `${sign}${Math.round(a * 10) / 10}h`;
@@ -2000,7 +1994,7 @@ function renderChanges(){
 
   const body = document.getElementById('chBody');
   if(!rows.length){
-    body.innerHTML = `<tr><td class="ch-empty" colspan="7">${set ? `No ETB / ETD changes since ${escapeHtml(since)}.` : 'Changes appear after the next update.'}</td></tr>`;
+    body.innerHTML = `<tr><td class="ch-empty" colspan="5">${set ? `No ETB / ETD changes since ${escapeHtml(since)}.` : 'Changes appear after the next update.'}</td></tr>`;
     return;
   }
   body.innerHTML = rows.map(r => {
@@ -2009,7 +2003,6 @@ function renderChanges(){
     const kindCls = r.kind === 'new' ? 'added' : r.kind;
     const kind = `<span class="ch-k ${kindCls}">${CH_KIND_LABEL[r.kind]}${r.deltaHours != null ? ` <small>${chDelta(r.deltaHours)}</small>` : ''}</span>`;
     const gone = r.kind === 'removed';
-    const cut = k => chPair(chCutoff(r.oldEtb, r.port, k), gone ? null : chCutoff(r.newEtb, r.port, k), 'ch-cut');
     return `
     <tr class="ch-row${expanded ? ' expanded' : ''}" data-vessel="${r.vessel.replace(/"/g,'&quot;')}" data-key="${escapeHtml(key)}">
       <td class="ch-port">${r.port.slice(2)}</td>
@@ -2017,10 +2010,8 @@ function renderChanges(){
       <td>${kind}</td>
       <td>${chPair(chDate(r.oldEtb), gone ? null : chDate(r.newEtb), 'ch-val')}</td>
       <td>${chPair(chDate(r.oldEtd), gone ? null : chDate(r.newEtd), 'ch-val')}</td>
-      <td>${cut('dry')}</td>
-      <td>${cut('rf')}</td>
     </tr>
-    ${expanded ? `<tr class="summary-detail-row"><td colspan="7">${renderDetailPanel(r.vessel, true)}</td></tr>` : ''}`;
+    ${expanded ? `<tr class="summary-detail-row"><td colspan="5">${renderDetailPanel(r.vessel, true)}</td></tr>` : ''}`;
   }).join('');
   body.querySelectorAll('.ch-row').forEach(row => row.addEventListener('click', () => {
     const same = expandedVessel === row.dataset.vessel && expandedChangeKey === row.dataset.key;
