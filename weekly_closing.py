@@ -81,7 +81,7 @@ def card(r, ch):
     key = " ".join(str(x) for x in (r["Service"], r["Vessel"], r["Vyg Bound"],
                                     r["Vessel Name"], port[2:])).lower()
     lines = [
-        f'{span(esc(f"{r.Vessel} {r["Vyg Bound"]}"), 10.5, bold=True)} {tag} {span(esc(str(r["Service"])), 8, GREY)}',
+        f'{span(esc(str(r["Vessel"]) + " " + str(r["Vyg Bound"])), 10.5, bold=True)} {tag} {span(esc(str(r["Service"])), 8, GREY)}',
         span(esc(r["Vessel Name"]), 8, GREY),
         span(f'ETB {r["ETB"]:%H%M} &middot; ETD {d_hm(r["ETD"])}', 9.5),
     ]

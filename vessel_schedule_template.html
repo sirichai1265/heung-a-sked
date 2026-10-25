@@ -586,6 +586,7 @@
     border:1px solid var(--navy-line);background:var(--navy-panel);color:var(--ink-dim);
     cursor:pointer;transition:all .15s;
   }
+  a.view-btn{text-decoration:none;}
   .view-btn svg{width:14px;height:14px;stroke-width:2;fill:none;}
   .view-btn:hover{border-color:var(--teal);color:var(--ink);}
   .view-btn.active{background:var(--teal-soft);border-color:var(--teal);color:var(--teal);}
@@ -881,6 +882,10 @@
       <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4v16"/><path d="M3 8l4-4 4 4"/><path d="M17 20V4"/><path d="M13 16l4 4 4-4"/></svg>
       Changes
     </button>
+    <a class="view-btn" id="weeklyClosingLink" href="weekly-closing.html" target="_blank" rel="noopener" title="Weekly schedule &amp; closing time (opens in a new tab)">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+      Weekly closing
+    </a>
     <select class="service-select" id="serviceSelect" aria-label="Filter by service">
       <option value="all">All services</option>
     </select>
