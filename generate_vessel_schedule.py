@@ -354,6 +354,108 @@ def build_schedule_changes(df_old, df_new):
     return changes
 
 
+def build_call_changes(df_old, df_new, now):
+    """THBKK/THLCH port calls that changed between the previous and current
+    dataset, for the dashboard's Changes view: ETB/ETD moved (delayed /
+    advanced), a call that disappeared (removed) or appeared (new). Past
+    calls are ignored, as are calls that only (dis)appear because the
+    fetch window rolled over a month boundary."""
+    if df_old is None:
+        return []
+    def calls(df):
+        d = df[df["POL"].isin(TH_PORTS)].dropna(subset=["Vessel Name", "Vyg Bound", "POL"])
+        d = d.sort_values("ETA Date").drop_duplicates(["Vessel Name", "Vyg Bound", "POL"])
+        return {(r["Vessel Name"], r["Vyg Bound"], r["POL"]): r for _, r in d.iterrows()}
+    old, new = calls(df_old), calls(only_th_vessels(df_new))
+    old_horizon = df_old["ETA Date"].max()
+    t = lambda r, c: r[c] if not pd.isna(r[c]) else r["ETA Date"]  # ETB/ETD fall back to ETA
+    iso = lambda x: None if pd.isna(x) else x.isoformat()
+    hours = lambda a, b: round((b - a).total_seconds() / 3600, 1)
+    out = []
+    for key in old.keys() | new.keys():
+        o, n = old.get(key), new.get(key)
+        vessel, vyg, port = key
+        row = {"vessel": vessel, "vygBound": vyg, "port": port}
+        if o is not None and n is not None:
+            d_etb, d_etd = hours(t(o, "ETB Date"), t(n, "ETB Date")), hours(t(o, "ETD Date"), t(n, "ETD Date"))
+            if abs(d_etb) < 0.5 and abs(d_etd) < 0.5 or t(n, "ETD Date") < now:
+                continue
+            delta = d_etb if abs(d_etb) >= 0.5 else d_etd
+            row.update(kind="delayed" if delta > 0 else "advanced", deltaHours=delta, etbMoved=abs(d_etb) >= 0.5)
+        elif o is not None:
+            if t(o, "ETD Date") < now or t(o, "ETA Date") > df_new["ETA Date"].max():
+                continue
+            row.update(kind="removed")
+        else:
+            if t(n, "ETB Date") < now or t(n, "ETA Date") > old_horizon:
+                continue
+            row.update(kind="new")
+        src = n if n is not None else o
+        row.update(code=src["Vessel"], service=src["Service"],
+                   oldEtb=iso(t(o, "ETB Date")) if o is not None else None,
+                   oldEtd=iso(t(o, "ETD Date")) if o is not None else None,
+                   newEtb=iso(t(n, "ETB Date")) if n is not None else None,
+                   newEtd=iso(t(n, "ETD Date")) if n is not None else None)
+        out.append(row)
+    out.sort(key=lambda r: (TH_PORTS.index(r["port"]), r["newEtb"] or r["oldEtb"]))
+    return out
+
+
+AUTO_SNAPSHOT_NAME = re.compile(r"^auto-(\d{8})-(\d{4})-SKED\.xlsx$")
+
+
+def snapshot_before(hours_ago, now):
+    """(Bangkok time, path) of the newest auto-fetched snapshot in input/
+    taken at least `hours_ago` hours before `now` -- their name stamps are UTC."""
+    cutoff = now - timedelta(hours=hours_ago)
+    best = None
+    for p in (SCRIPT_DIR / "input").glob("auto-*-SKED.xlsx"):
+        m = AUTO_SNAPSHOT_NAME.match(p.name)
+        if not m:
+            continue
+        t = datetime.strptime(m[1] + m[2], "%Y%m%d%H%M") + timedelta(hours=7)
+        if t <= cutoff and (best is None or t > best[0]):
+            best = (t, p)
+    return best
+
+
+def build_change_sets(df_prev, df_new, now, prev_name):
+    """Call changes against several baselines for the Changes view's
+    "Compare with" picker: the previous update, ~24h ago and ~7 days ago."""
+    sets = []
+    if df_prev is not None:
+        sets.append({"id": "last", "title": "Last update", "since": prev_update_label(prev_name),
+                     "rows": build_call_changes(df_prev, df_new, now)})
+    for sid, title, hrs in (("24h", "24 hours ago", 24), ("7d", "7 days ago", 24 * 7)):
+        snap = snapshot_before(hrs, now)
+        if snap:
+            sets.append({"id": sid, "title": title, "since": snap[0].strftime("%d/%m %H:%M"),
+                         "rows": build_call_changes(load_sked(snap[1]), df_new, now)})
+    return sets
+
+
+SKED_META_PATH = SCRIPT_DIR / "sked_meta.json"
+
+
+def prev_update_label(yesterday_name):
+    """'dd/mm HH:MM' (Bangkok) of the dataset Early/Delay compares against:
+    from sked_meta.json, else parsed from the previous file's name."""
+    try:
+        prev = json.loads(SKED_META_PATH.read_text(encoding="utf-8")).get("prev") or {}
+        if prev.get("updated"):
+            return datetime.fromisoformat(prev["updated"]).strftime("%d/%m %H:%M")
+    except (OSError, ValueError):
+        pass
+    name = Path(yesterday_name or "").name
+    m = re.match(r"auto-(\d{8})-(\d{4})-SKED", name)
+    if m:  # auto-run stamps are UTC
+        return (datetime.strptime(m[1] + m[2], "%Y%m%d%H%M") + timedelta(hours=7)).strftime("%d/%m %H:%M")
+    m = re.match(r"(\d{1,2})-(\d{1,2})(?:-(\d{2})(\d{2}))?-SKED", name)
+    if m:
+        return f"{int(m[2]):02d}/{int(m[1]):02d}" + (f" {m[3]}:{m[4]}" if m[3] else "")
+    return ""
+
+
 # ---------------------------------------------------------------------------
 # HTML dashboard output
 # ---------------------------------------------------------------------------
@@ -386,7 +488,8 @@ def build_sea_routes(legs, port_coords):
     return routes
 
 
-def write_dashboard(vessels, legs, changes, wharf_lookup, now, today_name, yesterday_name, outdir, base_url=SITE_BASE_URL):
+def write_dashboard(vessels, legs, changes, wharf_lookup, now, today_name, yesterday_name, outdir,
+                    base_url=SITE_BASE_URL, call_changes=None):
     if not TEMPLATE_PATH.exists():
         print(f"[error] template not found at {TEMPLATE_PATH}. Keep "
               f"vessel_schedule_template.html next to this script.", file=sys.stderr)
@@ -418,6 +521,7 @@ def write_dashboard(vessels, legs, changes, wharf_lookup, now, today_name, yeste
               f"(won't appear on route maps): {missing_ports}")
     html = html.replace("__PORT_COORDS_JSON__", json.dumps(port_coords, ensure_ascii=False))
     html = html.replace("__SEA_ROUTES_JSON__", json.dumps(build_sea_routes(legs, port_coords), separators=(",", ":")))
+    html = html.replace("__CALL_CHANGES_JSON__", json.dumps(call_changes or []))
     html = html.replace("__SOURCE_LABEL__", source_label)
     html = html.replace("__SOURCE_FILENAME__", today_name)
 
@@ -569,6 +673,16 @@ def resolve_dataset(args):
             src_desc = "patched: " + "; ".join(notes)
 
         save_sked(cur_df, SKED_CURRENT_PATH)
+        # Remember when each dataset was loaded, so the Changes view can say
+        # "since the last update dd/mm HH:MM" (the snapshot is just "prev").
+        try:
+            prev_meta = json.loads(SKED_META_PATH.read_text(encoding="utf-8")).get("current")
+        except (OSError, ValueError):
+            prev_meta = None
+        SKED_META_PATH.write_text(json.dumps({
+            "current": {"source": src_desc, "updated": bangkok_now().isoformat(timespec="minutes")},
+            "prev": prev_meta,
+        }, indent=2), encoding="utf-8")
         if prev_df is not None:
             print(f"[2/5] Early/Delay baseline: {SKED_PREV_PATH.name} "
                   f"(snapshot before this update)")
@@ -622,6 +736,7 @@ def main():
     vessels = build_vessel_summary(df_today, now)
     legs = build_legs(df_today)
     changes = build_schedule_changes(df_yesterday, df_today) if df_yesterday is not None else {}
+    call_changes = build_change_sets(df_yesterday, df_today, now, yesterday_name)
 
     missing_wharves = sorted({w for w in df_today["Wharf"].dropna().unique() if w not in wharf_lookup})
     if missing_wharves:
@@ -631,7 +746,7 @@ def main():
     date_tag = "" if (args.full or args.merge) else None
     html_path = write_dashboard(vessels, legs, changes, wharf_lookup, now,
                                  src_desc, yesterday_name, args.outdir,
-                                 base_url=args.base_url)
+                                 base_url=args.base_url, call_changes=call_changes)
     xlsx_path = write_excel(vessels, legs, changes, src_desc, yesterday_name,
                             args.outdir, date_tag=date_tag)
 

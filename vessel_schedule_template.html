@@ -69,6 +69,8 @@
     --bt-sailed-n:#F1BCB7;
     --bt-sailed-n-b:#E6A39D;
     --bt-skip-sailed:#C9D1D9;
+    --ch-red:#C8443D;
+    --ch-blue:#2F6FA8;
   }
   /* Dark theme: same variables, darker surfaces, lighter text. The header
      band and the green/red berth bars keep their colours in both themes. */
@@ -112,6 +114,8 @@
     --bt-sailed-n:#3F2826;
     --bt-sailed-n-b:#563532;
     --bt-skip-sailed:#38434F;
+    --ch-red:#EF8A7E;
+    --ch-blue:#7DB3E6;
   }
   *{box-sizing:border-box;}
   html{color-scheme:light;overflow-x:hidden;}
@@ -598,6 +602,36 @@
   .summary-detail-row td{padding:0;border-bottom:1px solid var(--line-faint);}
   .summary-detail-row .detail-panel{margin-top:0;border:none;border-radius:0;box-shadow:none;background:transparent;animation:none;padding:4px 14px 14px;}
 
+  .changes-view{margin-top:4px;}
+  .ch-controls{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;justify-content:space-between;margin-bottom:14px;}
+  .ch-base{font-family:'IBM Plex Mono', monospace;font-size:11.5px;color:var(--ink-dim);display:inline-flex;align-items:center;gap:8px;}
+  .ch-card{background:var(--navy-panel);border:1px solid var(--navy-line);border-radius:12px;overflow:hidden;}
+  .ch-head{display:flex;justify-content:space-between;align-items:baseline;gap:6px 12px;flex-wrap:wrap;padding:12px 16px;border-bottom:1px solid var(--navy-line);}
+  .ch-title{font-weight:700;font-size:15px;color:var(--bt-heading);}
+  .ch-count{font-family:'IBM Plex Mono', monospace;font-size:11.5px;color:var(--ink-dim);}
+  .ch-scroll{overflow-x:auto;}
+  table.ch-table{width:100%;min-width:780px;border-collapse:collapse;font-size:13px;}
+  .ch-table th{
+    background:var(--slate-soft);color:var(--ink);text-align:left;padding:9px 12px;
+    font-size:11.5px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;border-bottom:1px solid var(--navy-line);
+  }
+  .ch-table td{padding:8px 12px;border-bottom:1px solid var(--line-faint);color:var(--ink);white-space:nowrap;}
+  .ch-row{cursor:pointer;}
+  .ch-row:hover td{background:rgba(79,163,154,0.07);}
+  .ch-port{font-weight:700;}
+  .ch-old{color:var(--paper-dim);text-decoration:line-through;font-family:'IBM Plex Mono', monospace;font-size:12px;}
+  .ch-arrow{color:var(--ink-dim);margin:0 3px;}
+  .ch-val{font-family:'IBM Plex Mono', monospace;font-size:12.5px;font-weight:600;color:var(--ink);}
+  .ch-cut{font-family:'IBM Plex Mono', monospace;font-size:12.5px;font-weight:600;color:var(--ch-red);}
+  .ch-none{color:var(--paper-dim);}
+  .ch-k{font-weight:700;font-size:12.5px;letter-spacing:0.02em;}
+  .ch-k.delayed{color:var(--ch-red);}
+  .ch-k.advanced{color:var(--ch-blue);}
+  .ch-k.removed{color:var(--paper-dim);}
+  .ch-k.added{color:var(--teal);}
+  .ch-k small{font-weight:500;opacity:.8;}
+  .ch-empty{text-align:center;color:var(--ink-dim);padding:28px 12px;white-space:normal !important;}
+
   .berth-view{margin-top:4px;}
   .bt-card{background:var(--navy-panel);border:1px solid var(--navy-line);border-radius:14px;overflow:hidden;box-shadow:0 1px 3px rgba(16,32,48,0.05);}
   .bt-card-head{display:flex;align-items:center;justify-content:space-between;gap:12px 24px;flex-wrap:wrap;padding:16px 20px;border-bottom:1px solid var(--navy-line);}
@@ -835,6 +869,10 @@
       <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="4" x2="3" y2="20"/><rect x="6" y="5" width="9" height="4" rx="1"/><rect x="10" y="11" width="10" height="4" rx="1"/><rect x="5" y="17" width="7" height="3" rx="1"/></svg>
       Berth
     </button>
+    <button class="view-btn" id="viewBtnChanges" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4v16"/><path d="M3 8l4-4 4 4"/><path d="M17 20V4"/><path d="M13 16l4 4 4-4"/></svg>
+      Changes
+    </button>
     <select class="service-select" id="serviceSelect" aria-label="Filter by service">
       <option value="all">All services</option>
     </select>
@@ -905,6 +943,29 @@
     <div class="bt-foot">Each wharf row is a terminal with several berths. Bars stack into extra lanes when vessels are alongside at the same terminal at once, or when a short call's name needs the room — not a clash. Short calls are lengthened so the name fits inside the bar; the dashed tick marks the real ETD and the ETB→ETD times on the bar are exact. Hover a bar for details, click it to open that vessel's schedule.</div>
   </div>
 
+  <div class="changes-view" id="changesView" style="display:none;">
+    <div class="ch-controls">
+      <div class="chip-row" id="chPortFilter">
+        <div class="chip active" data-port="all">ALL</div>
+        <div class="chip chip-bkk" data-port="THBKK">THBKK</div>
+        <div class="chip chip-lch" data-port="THLCH">THLCH</div>
+      </div>
+      <label class="ch-base">Compare with
+        <select class="service-select" id="chBaseSelect" aria-label="Compare with"></select>
+      </label>
+    </div>
+    <div class="ch-card">
+      <div class="ch-head"><div class="ch-title" id="chTitle"></div><div class="ch-count" id="chCount"></div></div>
+      <div class="ch-scroll">
+        <table class="ch-table">
+          <thead><tr><th>Port</th><th>Vessel / Voy</th><th>Change</th><th>ETB</th><th>ETD</th><th>DRY</th><th>RF</th></tr></thead>
+          <tbody id="chBody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="bt-foot">DRY / RF cut-offs are worked out from ETB: THBKK = ETB − 12h / − 6h, THLCH = ETB − 24h / − 12h. Click a row to open that vessel's schedule.</div>
+  </div>
+
   <div class="summary-view" id="summaryView" style="display:none;">
     <div class="chip-row cal-port-filter" id="sumPortFilter">
       <div class="chip active" data-port="all">ALL</div>
@@ -947,6 +1008,7 @@
 <script>
 const DEFAULT_NOW = new Date("__NOW_ISO__");
 const SCHEDULE_CHANGES = __SCHEDULE_CHANGES_JSON__;
+const CALL_CHANGES = __CALL_CHANGES_JSON__;
 const DEFAULT_LEGS = __LEGS_JSON__;
 const DEFAULT_VESSELS = __VESSELS_JSON__
 ;
@@ -1431,6 +1493,7 @@ function initServiceSelect(){
     if(currentView === 'calendar') renderCalendar();
     if(currentView === 'summary') renderSummary();
     if(currentView === 'berth') renderBerth();
+    if(currentView === 'changes') renderChanges();
   });
 }
 
@@ -1528,6 +1591,7 @@ document.getElementById('searchInput').addEventListener('input', e=>{
   if(currentView==='calendar') renderCalendar();
   if(currentView==='summary') renderSummary();
   if(currentView==='berth') renderBerth();
+  if(currentView==='changes') renderChanges();
 });
 document.getElementById('searchClear').addEventListener('click', ()=>{
   const input = document.getElementById('searchInput');
@@ -1540,6 +1604,7 @@ document.getElementById('searchClear').addEventListener('click', ()=>{
   if(currentView==='calendar') renderCalendar();
   if(currentView==='summary') renderSummary();
   if(currentView==='berth') renderBerth();
+  if(currentView==='changes') renderChanges();
 });
 document.getElementById('sortSelect').addEventListener('change', e=>{
   currentSort = e.target.value;
@@ -1806,6 +1871,104 @@ document.querySelectorAll('#sumPortFilter .chip').forEach(chip => chip.addEventL
   renderSummary();
 }));
 
+// ---------- Changes (ETB / ETD moves between two snapshots) ----------
+// CALL_CHANGES holds one row set per baseline (last update / 24h / 7d);
+// each row is a TH port call that moved, was removed, or newly appeared.
+const CH_CUTOFF_HOURS = {THBKK: {dry: 12, rf: 6}, THLCH: {dry: 24, rf: 12}};
+const CH_KIND_LABEL = {delayed: 'DELAYED', advanced: 'ADVANCED', removed: 'REMOVED', new: 'NEW'};
+let changesBase = CALL_CHANGES.length ? CALL_CHANGES[0].id : null;
+let changesPort = 'all';
+
+const chPad = n => String(n).padStart(2, '0');
+function chFmt(d){ return d ? `${chPad(d.getDate())}/${chPad(d.getHours())}${chPad(d.getMinutes())}` : null; }
+function chDate(iso){ return iso ? new Date(iso) : null; }
+function chCutoff(iso, port, kind){
+  const d = chDate(iso);
+  return d ? new Date(d.getTime() - CH_CUTOFF_HOURS[port][kind] * 3600000) : null;
+}
+function chDelta(h){
+  const sign = h > 0 ? '+' : '−', a = Math.abs(h);
+  if(a < 48) return `${sign}${Math.round(a * 10) / 10}h`;
+  const d = Math.floor(a / 24), r = Math.round(a - d * 24);
+  return `${sign}${d}d${r ? ` ${r}h` : ''}`;
+}
+// Old value struck through → new value; a value that didn't move shows once.
+function chPair(oldD, newD, cls){
+  const o = chFmt(oldD), n = chFmt(newD);
+  if(!n) return o ? `<span class="ch-old">${o}</span>` : `<span class="ch-none">—</span>`;
+  if(!o || o === n) return `<span class="${o === n ? 'ch-val' : cls}">${n}</span>`;
+  return `<span class="ch-old">${o}</span><span class="ch-arrow">→</span><span class="${cls}">${n}</span>`;
+}
+
+function initChangesSelect(){
+  const sel = document.getElementById('chBaseSelect');
+  sel.innerHTML = CALL_CHANGES.map(s =>
+    `<option value="${s.id}">${escapeHtml(s.title)}${s.since ? ` (${escapeHtml(s.since)})` : ''} · ${s.rows.length}</option>`).join('');
+  if(changesBase) sel.value = changesBase;
+  sel.addEventListener('change', () => { changesBase = sel.value; expandedVessel = null; renderChanges(); });
+}
+
+function renderChanges(){
+  const set = CALL_CHANGES.find(s => s.id === changesBase);
+  const q = currentQuery.toLowerCase();
+  const rows = (set ? set.rows : []).filter(r =>
+      (changesPort === 'all' || r.port === changesPort)
+      && (currentService === 'all' || r.service === currentService)
+      && (r.vessel.toLowerCase().includes(q) || (r.code || '').toLowerCase().includes(q)));
+  const since = !set ? ''
+    : set.id === 'last' ? `the last update${set.since ? ' ' + set.since : ''}`
+    : set.since ? `${set.since} (${set.title.toLowerCase()})` : set.title.toLowerCase();
+  document.getElementById('chTitle').textContent = set ? `Changes since ${since}` : 'No earlier snapshot to compare with';
+  const counts = {};
+  rows.forEach(r => { counts[r.kind] = (counts[r.kind] || 0) + 1; });
+  document.getElementById('chCount').textContent = rows.length
+    ? Object.keys(CH_KIND_LABEL).filter(k => counts[k]).map(k => `${counts[k]} ${CH_KIND_LABEL[k].toLowerCase()}`).join(' · ')
+    : '';
+
+  const body = document.getElementById('chBody');
+  if(!rows.length){
+    body.innerHTML = `<tr><td class="ch-empty" colspan="7">${set ? `No ETB / ETD changes since ${escapeHtml(since)}.` : 'Changes appear after the next update.'}</td></tr>`;
+    return;
+  }
+  body.innerHTML = rows.map(r => {
+    const key = `${r.vessel}|${r.vygBound}|${r.port}`;
+    const expanded = expandedVessel === r.vessel && expandedChangeKey === key;
+    const kindCls = r.kind === 'new' ? 'added' : r.kind;
+    const kind = `<span class="ch-k ${kindCls}">${CH_KIND_LABEL[r.kind]}${r.deltaHours != null ? ` <small>${chDelta(r.deltaHours)}</small>` : ''}</span>`;
+    const gone = r.kind === 'removed';
+    const cut = k => chPair(chCutoff(r.oldEtb, r.port, k), gone ? null : chCutoff(r.newEtb, r.port, k), 'ch-cut');
+    return `
+    <tr class="ch-row${expanded ? ' expanded' : ''}" data-vessel="${r.vessel.replace(/"/g,'&quot;')}" data-key="${escapeHtml(key)}">
+      <td class="ch-port">${r.port.slice(2)}</td>
+      <td class="mono-strong">${r.code ? `${escapeHtml(r.code)} ` : ''}${escapeHtml(r.vygBound)} <span style="opacity:.75">${escapeHtml(r.vessel)}</span></td>
+      <td>${kind}</td>
+      <td>${chPair(chDate(r.oldEtb), gone ? null : chDate(r.newEtb), 'ch-val')}</td>
+      <td>${chPair(chDate(r.oldEtd), gone ? null : chDate(r.newEtd), 'ch-val')}</td>
+      <td>${cut('dry')}</td>
+      <td>${cut('rf')}</td>
+    </tr>
+    ${expanded ? `<tr class="summary-detail-row"><td colspan="7">${renderDetailPanel(r.vessel, true)}</td></tr>` : ''}`;
+  }).join('');
+  body.querySelectorAll('.ch-row').forEach(row => row.addEventListener('click', () => {
+    const same = expandedVessel === row.dataset.vessel && expandedChangeKey === row.dataset.key;
+    expandedVessel = same ? null : row.dataset.vessel;
+    expandedChangeKey = same ? null : row.dataset.key;
+    renderChanges();
+    if(expandedVessel) setTimeout(() => {
+      const el = body.querySelector('.ch-row.expanded');
+      if(el) el.scrollIntoView({behavior:'smooth', block:'nearest'});
+    }, 30);
+  }));
+  initLegMaps();
+}
+let expandedChangeKey = null;
+document.querySelectorAll('#chPortFilter .chip').forEach(chip => chip.addEventListener('click', () => {
+  document.querySelectorAll('#chPortFilter .chip').forEach(c => c.classList.remove('active'));
+  chip.classList.add('active');
+  changesPort = chip.dataset.port;
+  renderChanges();
+}));
+
 // ---------- Berth timeline ----------
 const BT_DAYS = 14;
 const BT_LANE_H = 76, BT_ROW_PAD_TOP = 24, BT_ROW_PAD_BOTTOM = 8, BT_BAR_H = 48;
@@ -2039,12 +2202,14 @@ function setView(v){
   document.getElementById('viewBtnCalendar').classList.toggle('active', v==='calendar');
   document.getElementById('viewBtnSummary').classList.toggle('active', v==='summary');
   document.getElementById('viewBtnBerth').classList.toggle('active', v==='berth');
+  document.getElementById('viewBtnChanges').classList.toggle('active', v==='changes');
   document.getElementById('statusChips').style.display = v==='list' ? '' : 'none';
   document.getElementById('metaRow').style.display = v==='list' ? '' : 'none';
   document.getElementById('cardGrid').style.display = v==='list' ? '' : 'none';
   document.getElementById('calendarView').style.display = v==='calendar' ? 'block' : 'none';
   document.getElementById('summaryView').style.display = v==='summary' ? 'block' : 'none';
   document.getElementById('berthView').style.display = v==='berth' ? 'block' : 'none';
+  document.getElementById('changesView').style.display = v==='changes' ? 'block' : 'none';
   if(v==='list'){
     document.getElementById('emptyState').style.display = lastRenderedList.length===0 ? 'block' : 'none';
   } else {
@@ -2052,6 +2217,7 @@ function setView(v){
     if(v==='calendar') renderCalendar();
     if(v==='summary') renderSummary();
     if(v==='berth') renderBerth();
+    if(v==='changes') renderChanges();
   }
   initLegMaps();
 }
@@ -2059,6 +2225,7 @@ document.getElementById('viewBtnList').addEventListener('click', () => setView('
 document.getElementById('viewBtnCalendar').addEventListener('click', () => setView('calendar'));
 document.getElementById('viewBtnSummary').addEventListener('click', () => setView('summary'));
 document.getElementById('viewBtnBerth').addEventListener('click', () => setView('berth'));
+document.getElementById('viewBtnChanges').addEventListener('click', () => setView('changes'));
 
 // ---------- Theme (light / dark) ----------
 const ICON_MOON = `<svg viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>`;
@@ -2079,6 +2246,7 @@ updateThemeToggle();
 
 updateHeader();
 initServiceSelect();
+initChangesSelect();
 render();
 </script>
 </body>
