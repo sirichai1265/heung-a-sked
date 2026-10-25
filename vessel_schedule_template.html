@@ -602,6 +602,15 @@
   .summary-detail-row td{padding:0;border-bottom:1px solid var(--line-faint);}
   .summary-detail-row .detail-panel{margin-top:0;border:none;border-radius:0;box-shadow:none;background:transparent;animation:none;padding:4px 14px 14px;}
 
+  .grid.table-mode{display:block;}
+  table.list-table{min-width:900px;}
+  .list-table .lt-group td{
+    background:var(--slate-soft);color:var(--bt-heading);font-weight:700;font-size:13px;letter-spacing:0.04em;
+    padding:8px 12px;border-bottom:1px solid var(--navy-line);
+  }
+  .list-table .lt-group td span{font-family:'IBM Plex Mono', monospace;font-weight:500;font-size:11px;color:var(--ink-dim);margin-left:8px;letter-spacing:0;}
+  .lt-next{white-space:nowrap;}
+
   .changes-view{margin-top:4px;}
   .ch-controls{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;justify-content:space-between;margin-bottom:14px;}
   .ch-base{font-family:'IBM Plex Mono', monospace;font-size:11.5px;color:var(--ink-dim);display:inline-flex;align-items:center;gap:8px;}
@@ -886,6 +895,12 @@
         <option value="name">A–Z</option>
         <option value="bkk">Soonest → THBKK</option>
         <option value="lch">Soonest → THLCH</option>
+      </select>
+    </span>
+    <span>LAYOUT
+      <select class="sort-select" id="layoutSelect">
+        <option value="cards">Cards</option>
+        <option value="table">Table by service</option>
       </select>
     </span>
   </div>
@@ -1204,6 +1219,8 @@ function renderStats(){
 let currentFilter = 'all';
 let currentQuery = '';
 let currentSort = 'date';
+let listLayout = 'cards';
+try { if(localStorage.getItem('vt-list-layout') === 'table') listLayout = 'table'; } catch(e) {}
 let expandedVessel = null;
 let lastRenderedList = [];
 
@@ -1540,6 +1557,9 @@ function render(){
   }
   empty.style.display = 'none';
 
+  grid.classList.toggle('table-mode', listLayout === 'table');
+  if(listLayout === 'table'){ renderListTable(grid, list); return; }
+
   grid.innerHTML = list.map(v => {
     const pVyg = primaryVygBound(v);
     return `
@@ -1610,6 +1630,60 @@ document.getElementById('sortSelect').addEventListener('change', e=>{
   currentSort = e.target.value;
   render();
 });
+const layoutSelect = document.getElementById('layoutSelect');
+layoutSelect.value = listLayout;
+layoutSelect.addEventListener('change', e=>{
+  listLayout = e.target.value;
+  try { localStorage.setItem('vt-list-layout', listLayout); } catch(err) {}
+  render();
+});
+
+// List as one table, a section per service (in the current sort order
+// within each section). Click a row for the vessel's full schedule.
+function listNextCell(eta, wharf, vyg){
+  if(!eta) return '<span style="opacity:.5">—</span>';
+  const w = wharfInfo(wharf);
+  return `<span class="mono-val">${fmtDate(eta)}</span>${vyg ? ` <span style="opacity:.6">${escapeHtml(vyg)}</span>` : ''}`
+    + `<br><span class="summary-loc-wharf">${escapeHtml(wharf || '')}${w ? ` · ${escapeHtml(w)}` : ''}</span>`;
+}
+function renderListTable(grid, list){
+  const groups = {};
+  list.forEach(v => (groups[v.service || '—'] = groups[v.service || '—'] || []).push(v));
+  const body = Object.keys(groups).sort().map(svc => `
+    <tr class="lt-group"><td colspan="7">${escapeHtml(svc)}<span>${groups[svc].length} vessel${groups[svc].length > 1 ? 's' : ''}</span></td></tr>
+    ${groups[svc].map(v => {
+      const expanded = expandedVessel === v.vessel;
+      const voyage = primaryVygBound(v);
+      return `
+      <tr class="summary-row${expanded ? ' expanded' : ''}" data-vessel="${v.vessel.replace(/"/g,'&quot;')}">
+        <td class="mono-strong summary-vessel-link">${escapeHtml(v.vessel)}${v.vesselCode ? ` <span style="opacity:.6">(${escapeHtml(v.vesselCode)})</span>` : ''}</td>
+        <td class="mono-strong">${voyage ? escapeHtml(voyage) : '-'}</td>
+        <td>${statusPill(v)}</td>
+        <td>${summaryLocationText(v)}</td>
+        <td>${summarySinceEtaText(v)}</td>
+        <td class="lt-next">${listNextCell(v.bkkEta, v.bkkWharf, v.bkkVygBound)}</td>
+        <td class="lt-next">${listNextCell(v.lchEta, v.lchWharf, v.lchVygBound)}</td>
+      </tr>
+      ${expanded ? `<tr class="summary-detail-row"><td colspan="7">${renderDetailPanel(v.vessel)}</td></tr>` : ''}`;
+    }).join('')}`).join('');
+  grid.innerHTML = `
+    <div class="summary-scroll">
+      <table class="leg-table summary-table list-table">
+        <thead><tr><th>Vessel</th><th>Voyage</th><th>Status</th><th>Location</th><th>Since / ETA</th><th>Next THBKK</th><th>Next THLCH</th></tr></thead>
+        <tbody>${body}</tbody>
+      </table>
+    </div>`;
+  grid.querySelectorAll('.summary-row').forEach(row => row.addEventListener('click', () => {
+    const name = row.dataset.vessel;
+    expandedVessel = (expandedVessel === name) ? null : name;
+    render();
+    if(expandedVessel) setTimeout(() => {
+      const el = grid.querySelector('.summary-row.expanded');
+      if(el) el.scrollIntoView({behavior:'smooth', block:'nearest'});
+    }, 30);
+  }));
+  initLegMaps();
+}
 document.querySelectorAll('#statusChips .chip').forEach(chip=>{
   chip.addEventListener('click', ()=>{
     document.querySelectorAll('#statusChips .chip').forEach(c=>c.classList.remove('active'));
@@ -1975,11 +2049,9 @@ const BT_LANE_H = 76, BT_ROW_PAD_TOP = 24, BT_ROW_PAD_BOTTOM = 8, BT_BAR_H = 48;
 const BT_MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 const BT_DOW = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
 const BT_PORT_NAME = {THBKK:'Bangkok', THLCH:'Laem Chabang'};
-// Terminal operator per wharf code; codes sharing an operator share a row
-// (BKK01 + BKK04 are PAT Terminal 2 and 1). Unknown codes fall back to the
-// first word of their Wharf.xls name, on a row of their own.
-const BT_OPERATORS = {BKK01:'PAT', BKK04:'PAT', BKK02:'UNITHAI', LCH01:'ESCO', LCH04:'LCMT',
-                      LCH05:'LCIT', LCH10:'LCIT', LCH06:'HLT', LCH07:'LCB1'};
+// Terminal operator per wharf code = first word of its short name in
+// wharf_names.json ("HPT / A2" -> HPT, "PAT TERMINAL 1" -> PAT); codes
+// sharing an operator share a row.
 let btPort = 'all';
 let btStart = btDefaultStart();
 let btScrollToNow = true;
@@ -1997,7 +2069,7 @@ function btDefaultStart(){
 }
 const btPad = n => String(n).padStart(2, '0');
 const btT = ms => { const d = new Date(ms); return `${btPad(d.getDate())}/${btPad(d.getHours())}:${btPad(d.getMinutes())}`; };
-const btOperator = code => BT_OPERATORS[code] || (wharfInfo(code) || code).split(/[\s(,]+/)[0];
+const btOperator = code => (wharfInfo(code) || code).split(/[\s(,/]+/)[0];
 function btCodesLabel(codes){
   const cs = codes.slice().sort();
   const pre = cs[0].replace(/\d+$/, '');

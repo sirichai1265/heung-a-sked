@@ -56,6 +56,9 @@ def bangkok_now():
     return datetime.now(BANGKOK_TZ).replace(tzinfo=None)
 TEMPLATE_PATH = SCRIPT_DIR / "vessel_schedule_template.html"
 WHARF_CACHE_PATH = SCRIPT_DIR / "wharf_lookup.json"
+# Ops' own short names for the TH terminals (from "wharf code.xls"), e.g.
+# LCH04 -> "LCMT / A0"; these replace the long Wharf.xls names.
+WHARF_NAMES_PATH = SCRIPT_DIR / "wharf_names.json"
 PORT_COORDS_PATH = SCRIPT_DIR / "port_coords.json"
 LOGO_PATH = SCRIPT_DIR / "logo ha.png"
 FAVICON_PATH = SCRIPT_DIR / "favicon.png"
@@ -143,15 +146,19 @@ def load_wharf_lookup(wharf_path):
         # refresh the cache for next time
         with open(WHARF_CACHE_PATH, "w", encoding="utf-8") as f:
             json.dump(lookup, f, ensure_ascii=False)
-        return lookup
-
-    if WHARF_CACHE_PATH.exists():
+    elif WHARF_CACHE_PATH.exists():
         print(f"[info] --wharf not given, reusing cached {WHARF_CACHE_PATH.name}")
         with open(WHARF_CACHE_PATH, encoding="utf-8") as f:
-            return json.load(f)
+            lookup = json.load(f)
+    else:
+        print("[warn] no wharf lookup available; wharf codes will show unresolved")
+        lookup = {}
 
-    print("[warn] no wharf lookup available; wharf codes will show unresolved")
-    return {}
+    if WHARF_NAMES_PATH.exists():
+        with open(WHARF_NAMES_PATH, encoding="utf-8") as f:
+            for code, name in json.load(f).items():
+                lookup[code] = {**lookup.get(code, {}), "name": name, "area": None}
+    return lookup
 
 
 # ---------------------------------------------------------------------------
