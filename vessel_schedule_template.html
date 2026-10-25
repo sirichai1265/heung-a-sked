@@ -1272,20 +1272,21 @@ function findLegChange(vesselName, vygBound, pol){
   return list.find(c => c.vygBound === vygBound && c.pol === pol) || null;
 }
 
-function renderDetailPanel(vesselName, hidePast){
-  let legs = VESSEL_LEGS[vesselName] || [];
-  if(hidePast){
-    legs = legs.filter(l => {
-      const etdTime = l.etd ? new Date(l.etd).getTime() : null;
-      return etdTime === null || etdTime >= NOW.getTime();
-    });
-  }
+// Full Schedule and its map start one leg back: the last port already
+// passed, then everything current and upcoming.
+function fromLastPassed(items, etdOf){
+  const nowT = NOW.getTime();
+  let i = items.findIndex(x => { const e = etdOf(x); return e === null || e >= nowT; });
+  if(i < 0) i = items.length;
+  return items.slice(Math.max(0, i - 1));
+}
+
+function renderDetailPanel(vesselName){
+  const legs = fromLastPassed(VESSEL_LEGS[vesselName] || [], l => l.etd ? new Date(l.etd).getTime() : null);
   const code = (VESSELS.find(v=>v.vessel===vesselName)||{}).vesselCode;
   const nameLabel = code ? `${vesselName} (${code})` : vesselName;
   if(legs.length === 0){
-    const msg = (hidePast && (VESSEL_LEGS[vesselName]||[]).length > 0)
-      ? 'No upcoming port calls (every leg in the schedule has already passed)'
-      : 'No schedule detail for this vessel in the file';
+    const msg = 'No schedule detail for this vessel in the file';
     return `<div class="detail-panel"><div class="detail-title">Full Schedule — ${nameLabel}</div><p style="color:var(--ink-dim);font-family:'IBM Plex Mono',monospace;font-size:12px;">${msg}</p></div>`;
   }
   const rows = legs.map(l=>{
@@ -1321,7 +1322,7 @@ function renderDetailPanel(vesselName, hidePast){
     </div>
     <div class="leg-map-wrap">
       <div class="detail-title">Voyage Map — ${nameLabel}</div>
-      <div class="leg-map" data-vessel="${escapeHtml(vesselName)}" data-hide-past="${hidePast?1:0}"></div>
+      <div class="leg-map" data-vessel="${escapeHtml(vesselName)}"></div>
       <div class="leg-map-legend">
         <span><i class="lm-line lm-past"></i>Past</span>
         <span><i class="lm-line lm-next"></i>Upcoming</span>
@@ -1420,9 +1421,7 @@ function initLegMaps(){
     const nowT = NOW.getTime();
     const allPts = routePoints(el.dataset.vessel);
     const pos = estimatePosition(allPts, nowT);
-    const pts = el.dataset.hidePast === '1'
-      ? allPts.filter(p => p.etd === null || p.etd >= nowT)
-      : allPts;
+    const pts = fromLastPassed(allPts, p => p.etd);
     if(!pts.length){ wrap.style.display = 'none'; return; }
 
     const map = L.map(el, {scrollWheelZoom:false, zoomSnap:0.25});
@@ -1903,7 +1902,7 @@ function renderSummary(){
   document.getElementById('summaryBody').innerHTML = list.map(v => {
     const expanded = expandedVessel === v.vessel;
     const detailRow = expanded
-      ? `<tr class="summary-detail-row"><td colspan="6">${renderDetailPanel(v.vessel, true)}</td></tr>`
+      ? `<tr class="summary-detail-row"><td colspan="6">${renderDetailPanel(v.vessel)}</td></tr>`
       : '';
     const voyage = primaryVygBound(v);
     return `
@@ -2011,7 +2010,7 @@ function renderChanges(){
       <td>${chPair(chDate(r.oldEtb), gone ? null : chDate(r.newEtb), 'ch-val')}</td>
       <td>${chPair(chDate(r.oldEtd), gone ? null : chDate(r.newEtd), 'ch-val')}</td>
     </tr>
-    ${expanded ? `<tr class="summary-detail-row"><td colspan="5">${renderDetailPanel(r.vessel, true)}</td></tr>` : ''}`;
+    ${expanded ? `<tr class="summary-detail-row"><td colspan="5">${renderDetailPanel(r.vessel)}</td></tr>` : ''}`;
   }).join('');
   body.querySelectorAll('.ch-row').forEach(row => row.addEventListener('click', () => {
     const same = expandedVessel === row.dataset.vessel && expandedChangeKey === row.dataset.key;
