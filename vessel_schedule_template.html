@@ -71,6 +71,12 @@
     --bt-skip-sailed:#C9D1D9;
     --ch-red:#C8443D;
     --ch-blue:#2F6FA8;
+    --wc-wk:#132C47;
+    --wc-today:#FFF7DA;
+    --wc-lch:#1E8A6E;
+    --wc-lch-bg:#E3F3EE;
+    --wc-bkk:#3559A8;
+    --wc-bkk-bg:#E8EEF8;
   }
   /* Dark theme: same variables, darker surfaces, lighter text. The header
      band and the green/red berth bars keep their colours in both themes. */
@@ -116,6 +122,12 @@
     --bt-skip-sailed:#38434F;
     --ch-red:#EF8A7E;
     --ch-blue:#7DB3E6;
+    --wc-wk:#0B1A2A;
+    --wc-today:#2E2A1C;
+    --wc-lch:#2FA383;
+    --wc-lch-bg:#18322D;
+    --wc-bkk:#5B82D6;
+    --wc-bkk-bg:#1A2840;
   }
   *{box-sizing:border-box;}
   html{color-scheme:light;overflow-x:hidden;}
@@ -614,10 +626,42 @@
   .weekly-view{margin-top:4px;}
   /* The weekly closing fragment carries its own inline (email-safe) colours,
      so it stays on a white sheet in both themes. */
-  .wc-paper{background:#fff;color:#203764;border:1px solid var(--navy-line);border-radius:12px;padding:14px;overflow-x:auto;font-family:Calibri,'Segoe UI',Arial,sans-serif;}
-  .wc-paper .v.off{display:none;}
-  .wc-paper .v.hit{outline:2px solid #F2C200;}
-  .wc-foot{font-size:12px;color:#667085;margin:10px 0 0;}
+  .wc-changes{margin-bottom:14px;}
+  .wc-red{font-family:'IBM Plex Mono', monospace;font-size:12.5px;font-weight:600;color:var(--ch-red);}
+  .wc-cal{overflow:auto;max-height:78vh;background:var(--navy-panel);border:1px solid var(--navy-line);border-radius:12px;}
+  table.wc-table{width:100%;min-width:1120px;border-collapse:collapse;table-layout:fixed;}
+  .wc-table th{
+    position:sticky;top:0;z-index:2;background:var(--slate-soft);color:var(--ink);
+    font-family:'IBM Plex Mono', monospace;font-size:11.5px;font-weight:600;letter-spacing:0.08em;
+    padding:9px 6px;border-bottom:1px solid var(--navy-line);border-left:1px solid var(--line-faint);
+  }
+  .wc-table th.wc-wkcol{width:64px;}
+  .wc-table td{vertical-align:top;padding:8px 6px 10px;border-top:1px solid var(--navy-line);border-left:1px solid var(--line-faint);height:120px;}
+  .wc-table td.wc-wk{
+    background:var(--wc-wk);color:#fff;text-align:center;vertical-align:middle;border-left:none;
+    font-family:'IBM Plex Mono', monospace;font-weight:600;font-size:12.5px;line-height:1.35;
+  }
+  .wc-table td.wc-today{background:var(--wc-today);}
+  .wc-day{font-family:'IBM Plex Mono', monospace;font-size:12.5px;font-weight:600;color:var(--ink);margin:0 0 7px 1px;}
+  .wc-today .wc-day{font-family:'Space Grotesk', sans-serif;font-weight:700;color:var(--ink-strong);letter-spacing:0.02em;}
+  .wc-today-pill{display:inline-block;min-width:24px;padding:1px 6px;margin-right:4px;border-radius:10px;background:#C8102E;color:#fff;text-align:center;}
+  .wc-card{border-radius:5px;padding:5px 8px 6px;margin-bottom:6px;border-left:3px solid;cursor:pointer;transition:box-shadow .15s;}
+  .wc-card:hover{box-shadow:0 2px 8px rgba(16,32,48,0.14);}
+  .wc-card.lch{background:var(--wc-lch-bg);border-left-color:var(--wc-lch);}
+  .wc-card.bkk{background:var(--wc-bkk-bg);border-left-color:var(--wc-bkk);}
+  .wc-card.past{opacity:.55;}
+  .wc-c1{font-family:'Space Grotesk', sans-serif;font-size:13px;color:var(--ink-strong);display:flex;align-items:center;gap:5px;white-space:nowrap;}
+  .wc-port{font-family:'IBM Plex Mono', monospace;font-size:9px;font-weight:700;color:#fff;border-radius:3px;padding:1px 4px;letter-spacing:0.03em;}
+  .wc-port.lch{background:var(--wc-lch);}
+  .wc-port.bkk{background:var(--wc-bkk);}
+  .wc-svc{font-size:10.5px;color:var(--ink-dim);font-weight:500;}
+  .wc-c2{font-family:'IBM Plex Sans', sans-serif;font-size:10.5px;font-weight:500;color:var(--ink-dim);text-transform:uppercase;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .wc-c3,.wc-c4{font-family:'IBM Plex Mono', monospace;font-size:11px;color:var(--ink);white-space:nowrap;margin-top:2px;}
+  .wc-c4{color:var(--ch-red);}
+  .wc-tag{font-family:'IBM Plex Mono', monospace;font-size:10.5px;font-weight:700;margin-top:2px;}
+  .wc-tag.delayed{color:var(--ch-red);}
+  .wc-tag.advanced{color:var(--ch-blue);}
+  .wc-tag.added{color:var(--teal);}
 
   .changes-view{margin-top:4px;}
   .ch-controls{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;justify-content:space-between;margin-bottom:14px;}
@@ -980,7 +1024,10 @@
         <button class="view-btn" id="wcCopy" type="button" title="Copy the calendar as formatted text to paste into an email">Copy for email</button>
       </span>
     </div>
-    <div class="wc-paper" id="wcBody">__WEEKLY_CLOSING_HTML__</div>
+    <div class="ch-card wc-changes" id="wcChanges"></div>
+    <div class="wc-cal" id="wcCal"></div>
+    <div class="bt-foot" id="wcFoot"></div>
+    <template id="wcEmail">__WEEKLY_CLOSING_HTML__</template>
   </div>
 
   <div class="changes-view" id="changesView" style="display:none;">
@@ -1049,6 +1096,7 @@
 const DEFAULT_NOW = new Date("__NOW_ISO__");
 const SCHEDULE_CHANGES = __SCHEDULE_CHANGES_JSON__;
 const CALL_CHANGES = __CALL_CHANGES_JSON__;
+const WEEKLY = __WEEKLY_JSON__;
 const DEFAULT_LEGS = __LEGS_JSON__;
 const DEFAULT_VESSELS = __VESSELS_JSON__
 ;
@@ -2055,24 +2103,101 @@ function renderChanges(){
 }
 let expandedChangeKey = null;
 
-// ---------- Weekly closing (calendar fragment built by weekly_closing.py) ----------
-// Cards carry data-k = "service code voyage name port"; filter by toggling
-// .off, the same way the standalone weekly closing page does.
+// ---------- Weekly closing ----------
+// WEEKLY (from weekly_closing.py) drives the themed calendar here; the
+// inline-styled copy of the same calendar sits in <template id="wcEmail">
+// for "Copy for email", filtered the same way via each card's data-k.
 let weeklyPort = 'all';
+const WC_DOW = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
+const wcHm = d => `${chPad(d.getHours())}${chPad(d.getMinutes())}`;
+const wcFmt = d => d ? `${d.getDate()}/${wcHm(d)}` : '—';
+const wcCut = (iso, port, i) => iso ? new Date(new Date(iso).getTime() - WEEKLY.cutHours[port][i] * 3600000) : null;
+function wcMatch(c, words){
+  const k = `${c.service} ${c.code} ${c.vyg} ${c.name} ${c.port.slice(2)}`.toLowerCase();
+  return words.every(w => k.includes(w))
+    && (weeklyPort === 'all' || c.port.slice(2).toLowerCase() === weeklyPort)
+    && (currentService === 'all' || c.service === currentService);
+}
+function wcChangeTag(ch){
+  if(!ch) return '';
+  if(ch.kind === 'new') return `<div class="wc-tag added">NEW</div>`;
+  return `<div class="wc-tag ${ch.kind}">${CH_KIND_LABEL[ch.kind]} ${chDelta(ch.deltaHours)}</div>`;
+}
+function wcCard(c){
+  const etb = new Date(c.etb), etd = new Date(c.etd);
+  const past = etb.getTime() < NOW.getTime();
+  const port = c.port.slice(2).toLowerCase();
+  return `<div class="wc-card ${port}${past ? ' past' : ''}" data-vessel="${escapeHtml(c.name)}">
+    <div class="wc-c1"><b>${escapeHtml(c.code)} ${escapeHtml(c.vyg)}</b><span class="wc-port ${port}">${port.toUpperCase()}</span><span class="wc-svc">${escapeHtml(c.service)}</span></div>
+    <div class="wc-c2">${escapeHtml(c.name)}</div>
+    <div class="wc-c3">ETB ${wcHm(etb)} · ETD ${wcFmt(etd)}</div>
+    ${wcChangeTag(c.change)}
+    <div class="wc-c4">DRY ${wcFmt(wcCut(c.etb, c.port, 0))} · RF ${wcFmt(wcCut(c.etb, c.port, 1))}</div>
+  </div>`;
+}
+function isoWeek(d){
+  const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const day = t.getUTCDay() || 7;
+  t.setUTCDate(t.getUTCDate() + 4 - day);
+  const y0 = new Date(Date.UTC(t.getUTCFullYear(), 0, 1));
+  return Math.ceil(((t - y0) / 86400000 + 1) / 7);
+}
 function renderWeekly(){
   const words = currentQuery.trim().toLowerCase().split(/\s+/).filter(Boolean);
-  const svc = currentService.toLowerCase();
-  let n = 0, tot = 0;
-  document.querySelectorAll('#wcBody .v').forEach(v => {
-    tot++;
-    const k = v.dataset.k, toks = k.split(' ');
-    const ok = words.every(w => k.includes(w)) && (weeklyPort === 'all' || toks.includes(weeklyPort))
-      && (currentService === 'all' || toks[0] === svc);
-    v.classList.toggle('off', !ok);
-    v.classList.toggle('hit', ok && words.length > 0);
-    if(ok) n++;
-  });
-  document.getElementById('wcCount').textContent = n === tot ? `${tot} calls` : `${n} / ${tot} calls`;
+  const calls = WEEKLY.calls.filter(c => wcMatch(c, words));
+  document.getElementById('wcCount').textContent = `Showing ${calls.length} of ${WEEKLY.calls.length} voyages`;
+
+  // Changes since the baseline, same filters
+  const rows = WEEKLY.changes.filter(r => wcMatch({service:r.service, code:r.code||'', vyg:r.vygBound, name:r.vessel, port:r.port}, words));
+  const cut = (r, i, gone) => chPair(wcCut(r.oldEtb, r.port, i), gone ? null : wcCut(r.newEtb, r.port, i), 'wc-red');
+  document.getElementById('wcChanges').innerHTML = `
+    <div class="ch-head"><div class="ch-title">Changes since the last update ${escapeHtml(WEEKLY.sinceLabel)}</div><div class="ch-count">${rows.length} change${rows.length === 1 ? '' : 's'}</div></div>
+    ${rows.length ? `<div class="ch-scroll"><table class="ch-table">
+      <thead><tr><th>Port</th><th>Vessel / Voy</th><th>Change</th><th>ETB</th><th>ETD</th><th>DRY</th><th>RF</th></tr></thead>
+      <tbody>${rows.map(r => {
+        const gone = r.kind === 'removed';
+        const kind = `<span class="ch-k ${r.kind === 'new' ? 'added' : r.kind}">${CH_KIND_LABEL[r.kind]}${r.deltaHours != null ? ` <small>${chDelta(r.deltaHours)}</small>` : ''}</span>`;
+        return `<tr><td class="ch-port">${r.port.slice(2)}</td>
+          <td class="mono-strong">${escapeHtml(r.code || '')} ${escapeHtml(r.vygBound)} <span style="opacity:.75">${escapeHtml(r.vessel)}</span></td>
+          <td>${kind}</td>
+          <td>${chPair(chDate(r.oldEtb), gone ? null : chDate(r.newEtb), 'ch-val')}</td>
+          <td>${chPair(chDate(r.oldEtd), gone ? null : chDate(r.newEtd), 'ch-val')}</td>
+          <td>${cut(r, 0, gone)}</td><td>${cut(r, 1, gone)}</td></tr>`;
+      }).join('')}</tbody></table></div>` : `<div class="ch-empty">No ETB / ETD changes since ${escapeHtml(WEEKLY.sinceLabel)}.</div>`}`;
+
+  // Calendar: a row per week, a card per call on its ETB day
+  const byDay = {};
+  calls.forEach(c => { const k = new Date(c.etb).toDateString(); (byDay[k] = byDay[k] || []).push(c); });
+  const start = new Date(WEEKLY.start + 'T00:00:00');
+  const todayStr = NOW.toDateString();
+  let html = `<table class="wc-table"><thead><tr><th class="wc-wkcol"></th>${WC_DOW.map(d => `<th>${d}</th>`).join('')}</tr></thead><tbody>`;
+  for(let w = 0; w < WEEKLY.weeks; w++){
+    const wkStart = new Date(start); wkStart.setDate(start.getDate() + 7 * w);
+    const mon = new Date(wkStart); mon.setDate(mon.getDate() + 1);
+    html += `<tr><td class="wc-wk">WK<br>${isoWeek(mon)}</td>`;
+    for(let i = 0; i < 7; i++){
+      const d = new Date(wkStart); d.setDate(wkStart.getDate() + i);
+      const isToday = d.toDateString() === todayStr;
+      const head = isToday
+        ? `<span class="wc-today-pill">${d.getDate()}</span> TODAY`
+        : (i === 0 || d.getDate() === 1) ? `${d.getDate()} ${BT_MON[d.getMonth()]}` : `${d.getDate()}`;
+      html += `<td class="${isToday ? 'wc-today' : ''}"><div class="wc-day">${head}</div>${(byDay[d.toDateString()] || []).map(wcCard).join('')}</td>`;
+    }
+    html += '</tr>';
+  }
+  document.getElementById('wcCal').innerHTML = html + '</tbody></table>';
+  const ch = WEEKLY.cutHours;
+  document.getElementById('wcFoot').textContent = `Times D/HHMM; a card sits on the day of its ETB. DRY = dry closing, RF = reefer closing. `
+    + `THBKK: DRY ETB−${ch.THBKK[0]}h / RF ETB−${ch.THBKK[1]}h · THLCH: DRY ETB−${ch.THLCH[0]}h / RF ETB−${ch.THLCH[1]}h. `
+    + `Red / blue tag = ETB change since ${WEEKLY.sinceLabel}. Click a card to open that vessel's schedule.`;
+  document.querySelectorAll('#wcCal .wc-card').forEach(card => card.addEventListener('click', () => {
+    expandedVessel = card.dataset.vessel;
+    setView('list');
+    setTimeout(() => {
+      const el = document.querySelector('#summaryBody .summary-row.expanded');
+      if(el) el.scrollIntoView({behavior:'smooth', block:'start'});
+    }, 60);
+  }));
 }
 document.querySelectorAll('#wcPortFilter .chip').forEach(chip => chip.addEventListener('click', () => {
   document.querySelectorAll('#wcPortFilter .chip').forEach(c => c.classList.remove('active'));
@@ -2080,12 +2205,19 @@ document.querySelectorAll('#wcPortFilter .chip').forEach(chip => chip.addEventLi
   weeklyPort = chip.dataset.port;
   renderWeekly();
 }));
-// Copies what's shown (filtered-out cards dropped) as rich text for Outlook.
+// Copies the email (inline-styled) version, minus the cards filtered out here.
 document.getElementById('wcCopy').addEventListener('click', async () => {
   const btn = document.getElementById('wcCopy');
-  const clone = document.getElementById('wcBody').cloneNode(true);
-  clone.querySelectorAll('.v.off').forEach(v => v.remove());
-  clone.querySelectorAll('.v.hit').forEach(v => v.classList.remove('hit'));
+  const words = currentQuery.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  const svc = currentService.toLowerCase();
+  const clone = document.createElement('div');
+  clone.appendChild(document.getElementById('wcEmail').content.cloneNode(true));
+  clone.querySelectorAll('.v').forEach(v => {
+    const k = v.dataset.k, toks = k.split(' ');
+    const ok = words.every(w => k.includes(w)) && (weeklyPort === 'all' || toks.includes(weeklyPort))
+      && (currentService === 'all' || toks[0] === svc);
+    if(!ok) v.remove();
+  });
   const html = clone.innerHTML;
   try {
     await navigator.clipboard.write([new ClipboardItem({
@@ -2093,13 +2225,11 @@ document.getElementById('wcCopy').addEventListener('click', async () => {
       'text/plain': new Blob([clone.innerText], {type:'text/plain'}),
     })]);
   } catch(e) {
-    const tmp = document.createElement('div');
-    tmp.style.cssText = 'position:fixed;left:-99999px;top:0';
-    tmp.innerHTML = html;
-    document.body.appendChild(tmp);
-    const range = document.createRange(); range.selectNodeContents(tmp);
+    clone.style.cssText = 'position:fixed;left:-99999px;top:0';
+    document.body.appendChild(clone);
+    const range = document.createRange(); range.selectNodeContents(clone);
     const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range);
-    document.execCommand('copy'); sel.removeAllRanges(); tmp.remove();
+    document.execCommand('copy'); sel.removeAllRanges(); clone.remove();
   }
   btn.textContent = 'Copied ✓';
   setTimeout(() => { btn.textContent = 'Copy for email'; }, 1800);

@@ -230,7 +230,19 @@ def build(df_new, now, since=None):
     calls = calls[(calls["ETB"].dt.date >= start) & (calls["ETB"].dt.date < end)]
     services = ", ".join(dict.fromkeys(calls.sort_values("ETB")["Service"].astype(str)))
     fragment = f"<div class=chg>{changes_table(rows, since_label)}</div>{calendar(calls, changes, today, start)}"
-    return fragment, {"calls": len(calls), "rows": len(rows), "since_label": since_label, "services": services}
+    iso = lambda t: t.isoformat()
+    data = {
+        "start": start.isoformat(), "weeks": WEEKS, "sinceLabel": since_label, "cutHours": CUT_HOURS,
+        "changes": rows,
+        "calls": [{
+            "code": str(r["Vessel"]), "vyg": str(r["Vyg Bound"]), "name": str(r["Vessel Name"]),
+            "service": str(r["Service"]), "port": r["POL"], "etb": iso(r["ETB"]), "etd": iso(r["ETD"]),
+            "change": (lambda c: c and {"kind": c["kind"], "deltaHours": c.get("deltaHours")})(
+                changes.get((r["Vessel Name"], r["Vyg Bound"], r["POL"]))),
+        } for _, r in calls.sort_values("ETB").iterrows()],
+    }
+    return fragment, {"calls": len(calls), "rows": len(rows), "since_label": since_label,
+                      "services": services, "data": data}
 
 
 def main():
