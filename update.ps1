@@ -88,7 +88,7 @@ git push origin main | Out-Host
 if ($LASTEXITCODE -ne 0) { Fail 'git push ล้มเหลว (ตรวจ internet / สิทธิ์ GitHub)' }
 
 Write-Host ''
-Write-Host 'เสร็จแล้ว — เว็บจะอัปเดตอัตโนมัติใน ~1 นาที:' -ForegroundColor Green
-Write-Host '  https://sirichai1265.github.io/heung-a-sked/'
+Write-Host 'เสร็จแล้ว — เปิดไฟล์ dashboard ได้ที่:' -ForegroundColor Green
+Write-Host "  $(Join-Path $PSScriptRoot 'Vessel Schedule.html')"
 Write-Host ''
 Read-Host 'กด Enter เพื่อปิด'
