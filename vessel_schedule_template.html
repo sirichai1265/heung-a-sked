@@ -899,8 +899,8 @@
     </span>
     <span>LAYOUT
       <select class="sort-select" id="layoutSelect">
-        <option value="cards">Cards</option>
         <option value="table">Table by service</option>
+        <option value="cards">Cards</option>
       </select>
     </span>
   </div>
@@ -1219,8 +1219,8 @@ function renderStats(){
 let currentFilter = 'all';
 let currentQuery = '';
 let currentSort = 'date';
-let listLayout = 'cards';
-try { if(localStorage.getItem('vt-list-layout') === 'table') listLayout = 'table'; } catch(e) {}
+// List always opens as the service table; Cards is a per-visit switch.
+let listLayout = 'table';
 let expandedVessel = null;
 let lastRenderedList = [];
 
@@ -1634,7 +1634,6 @@ const layoutSelect = document.getElementById('layoutSelect');
 layoutSelect.value = listLayout;
 layoutSelect.addEventListener('change', e=>{
   listLayout = e.target.value;
-  try { localStorage.setItem('vt-list-layout', listLayout); } catch(err) {}
   render();
 });
 
