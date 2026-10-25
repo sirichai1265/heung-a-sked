@@ -203,18 +203,16 @@ run();
 """
 
 
-def main():
-    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--since", help="Baseline time (Bangkok), e.g. the last issue: 2026-10-21T15:30 (default: 24h ago)")
-    ap.add_argument("--out", help="Output HTML (default: Desktop/THAI Weekly closing time <date>.html)")
-    args = ap.parse_args()
+FOOT_RULES = ("Times D/HHMM; a card sits on the day of its ETB. DRY = dry closing, RF = reefer closing. "
+              "BKK: DRY ETB-12h / RF ETB-6h &middot; LCH: DRY ETB-24h / RF ETB-12h.")
 
-    meta = json.loads(g.SKED_META_PATH.read_text(encoding="utf-8"))
-    updated = datetime.fromisoformat(meta["current"]["updated"])
-    now = updated
-    df_new = g.only_th_vessels(g.load_sked(g.SKED_CURRENT_PATH))
 
-    since = datetime.fromisoformat(args.since) if args.since else now - timedelta(hours=24)
+def build(df_new, now, since=None):
+    """Changes table + calendar as one inline-styled HTML fragment (the
+    dashboard's Weekly closing view embeds it; main() wraps it as a page).
+    Returns (fragment, info) with info = calls / rows / since_label / services."""
+    df_new = g.only_th_vessels(df_new)
+    since = since or now - timedelta(hours=24)
     snap = g.snapshot_before((now - since).total_seconds() / 3600, now)
     if snap:
         rows = g.build_call_changes(g.load_sked(snap[1]), df_new, now)
@@ -231,8 +229,22 @@ def main():
     calls = th_calls(df_new)
     calls = calls[(calls["ETB"].dt.date >= start) & (calls["ETB"].dt.date < end)]
     services = ", ".join(dict.fromkeys(calls.sort_values("ETB")["Service"].astype(str)))
+    fragment = f"<div class=chg>{changes_table(rows, since_label)}</div>{calendar(calls, changes, today, start)}"
+    return fragment, {"calls": len(calls), "rows": len(rows), "since_label": since_label, "services": services}
 
-    out = args.out or str(g.SCRIPT_DIR.parent / f"THAI Weekly closing time {today:%Y-%m-%d}.html")
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--since", help="Baseline time (Bangkok), e.g. the last issue: 2026-10-21T15:30 (default: 24h ago)")
+    ap.add_argument("--out", help="Output HTML (default: Desktop/THAI Weekly closing time <date>.html)")
+    args = ap.parse_args()
+
+    meta = json.loads(g.SKED_META_PATH.read_text(encoding="utf-8"))
+    updated = now = datetime.fromisoformat(meta["current"]["updated"])
+    since = datetime.fromisoformat(args.since) if args.since else None
+    fragment, info = build(g.load_sked(g.SKED_CURRENT_PATH), now, since)
+
+    out = args.out or str(g.SCRIPT_DIR.parent / f"THAI Weekly closing time {now:%Y-%m-%d}.html")
     logo = g._data_uri(g.LOGO_PATH, "logo hidden")
     page = (
         '<!doctype html><html lang=en><head><meta charset="utf-8">'
@@ -240,20 +252,18 @@ def main():
         f"<title>Weekly Closing Time</title><style>{PAGE_CSS}</style></head><body>"
         f'<header>{f"<img class=logo src={chr(34)}{logo}{chr(34)} alt=HAL>" if logo else ""}<div>'
         "<h1>HEUNG A LINE (THAILAND) &middot; Weekly Schedule &amp; Closing Time</h1>"
-        f"<p>Update {updated:%d/%m/%Y %H:%M} (Thailand time) &middot; services: {esc(services)}</p></div></header>"
+        f"<p>Update {updated:%d/%m/%Y %H:%M} (Thailand time) &middot; services: {esc(info['services'])}</p></div></header>"
         '<div class=bar><input id=q type=search placeholder="Search vessel, voyage, name or service... (press /)" autocomplete=off>'
         '<button class=chip id=clr>Clear</button><button class="chip on" data-p="">All ports</button>'
         '<button class=chip data-p="bkk">BKK</button><button class=chip data-p="lch">LCH</button><span id=cnt></span></div>'
-        f"<main><div class=chg>{changes_table(rows, since_label)}</div>{calendar(calls, changes, today, start)}</main>"
-        "<p class=foot>Times D/HHMM; a card sits on the day of its ETB. DRY = dry closing, RF = reefer closing. "
-        "BKK: DRY ETB-12h / RF ETB-6h &middot; LCH: DRY ETB-24h / RF ETB-12h. "
-        f"Red / blue tag = ETB change since {since_label}.<br>"
+        f"<main>{fragment}</main>"
+        f"<p class=foot>{FOOT_RULES} Red / blue tag = ETB change since {info['since_label']}.<br>"
         f"Source: Heung-A e-Service (e-heunga.com) vessel schedule, {updated:%d %b %H:%M}.</p>"
         f"<script>{PAGE_JS}</script></body></html>"
     )
     with open(out, "w", encoding="utf-8") as f:
         f.write(page)
-    print(f"{len(calls)} calls, {len(rows)} change rows since {since_label} -> {out}")
+    print(f"{info['calls']} calls, {info['rows']} change rows since {info['since_label']} -> {out}")
 
 
 if __name__ == "__main__":

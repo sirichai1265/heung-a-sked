@@ -496,7 +496,7 @@ def build_sea_routes(legs, port_coords):
 
 
 def write_dashboard(vessels, legs, changes, wharf_lookup, now, today_name, yesterday_name, outdir,
-                    base_url=SITE_BASE_URL, call_changes=None):
+                    base_url=SITE_BASE_URL, call_changes=None, weekly_html=""):
     if not TEMPLATE_PATH.exists():
         print(f"[error] template not found at {TEMPLATE_PATH}. Keep "
               f"vessel_schedule_template.html next to this script.", file=sys.stderr)
@@ -531,6 +531,8 @@ def write_dashboard(vessels, legs, changes, wharf_lookup, now, today_name, yeste
     html = html.replace("__CALL_CHANGES_JSON__", json.dumps(call_changes or []))
     html = html.replace("__SOURCE_LABEL__", source_label)
     html = html.replace("__SOURCE_FILENAME__", today_name)
+    # Last: an HTML fragment, so nothing after it should scan its text.
+    html = html.replace("__WEEKLY_CLOSING_HTML__", weekly_html)
 
     out_path = Path(outdir) / "Vessel Schedule.html"
     with open(out_path, "w", encoding="utf-8") as f:
@@ -744,6 +746,10 @@ def main():
     legs = build_legs(df_today)
     changes = build_schedule_changes(df_yesterday, df_today) if df_yesterday is not None else {}
     call_changes = build_change_sets(df_yesterday, df_today, now, yesterday_name)
+    import weekly_closing  # imports this module back, so not at the top
+    weekly_html, weekly_info = weekly_closing.build(df_today, now)
+    weekly_html += (f'<p class="wc-foot">{weekly_closing.FOOT_RULES} '
+                    f'Red / blue tag = ETB change since {weekly_info["since_label"]}.</p>')
 
     missing_wharves = sorted({w for w in df_today["Wharf"].dropna().unique() if w not in wharf_lookup})
     if missing_wharves:
@@ -753,7 +759,8 @@ def main():
     date_tag = "" if (args.full or args.merge) else None
     html_path = write_dashboard(vessels, legs, changes, wharf_lookup, now,
                                  src_desc, yesterday_name, args.outdir,
-                                 base_url=args.base_url, call_changes=call_changes)
+                                 base_url=args.base_url, call_changes=call_changes,
+                                 weekly_html=weekly_html)
     xlsx_path = write_excel(vessels, legs, changes, src_desc, yesterday_name,
                             args.outdir, date_tag=date_tag)
 

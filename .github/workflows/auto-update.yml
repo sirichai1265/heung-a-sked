@@ -103,14 +103,13 @@ jobs:
         run: |
           python generate_vessel_schedule.py --full "${{ steps.fetch.outputs.out }}"
           cp "Vessel Schedule.html" index.html
-          python weekly_closing.py --out weekly-closing.html
 
       - name: Commit and push if anything changed
         if: steps.gate.outputs.run == 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add "${{ steps.fetch.outputs.out }}" "Vessel Schedule.html" "Vessel Schedule.xlsx" index.html sked_current.xlsx sked_prev.xlsx sked_meta.json weekly-closing.html
+          git add "${{ steps.fetch.outputs.out }}" "Vessel Schedule.html" "Vessel Schedule.xlsx" index.html sked_current.xlsx sked_prev.xlsx sked_meta.json
           if git diff --cached --quiet; then
             echo "No changes -- nothing to push"
           else

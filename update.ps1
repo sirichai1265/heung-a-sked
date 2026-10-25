@@ -77,14 +77,12 @@ python @genArgs
 if ($LASTEXITCODE -ne 0) { Fail 'generate_vessel_schedule.py ล้มเหลว (ดู error ด้านบน)' }
 
 Copy-Item 'Vessel Schedule.html' 'index.html' -Force
-python weekly_closing.py --out weekly-closing.html
-if ($LASTEXITCODE -ne 0) { Fail 'weekly_closing.py ล้มเหลว (ดู error ด้านบน)' }
 
 # --- commit + push --------------------------------------------------
 # Targeted add (never -A) so stray files sitting in this folder never
 # ride along into the public repo.
 $tag = [System.IO.Path]::GetFileNameWithoutExtension($name)
-git add -- $relPath 'Vessel Schedule.html' 'Vessel Schedule.xlsx' 'index.html' 'sked_current.xlsx' 'sked_prev.xlsx' 'sked_meta.json' 'weekly-closing.html'
+git add -- $relPath 'Vessel Schedule.html' 'Vessel Schedule.xlsx' 'index.html' 'sked_current.xlsx' 'sked_prev.xlsx' 'sked_meta.json'
 git commit -m "Update ($Mode): $tag" | Out-Host
 git push origin main | Out-Host
 if ($LASTEXITCODE -ne 0) { Fail 'git push ล้มเหลว (ตรวจ internet / สิทธิ์ GitHub)' }

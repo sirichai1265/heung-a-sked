@@ -586,7 +586,6 @@
     border:1px solid var(--navy-line);background:var(--navy-panel);color:var(--ink-dim);
     cursor:pointer;transition:all .15s;
   }
-  a.view-btn{text-decoration:none;}
   .view-btn svg{width:14px;height:14px;stroke-width:2;fill:none;}
   .view-btn:hover{border-color:var(--teal);color:var(--ink);}
   .view-btn.active{background:var(--teal-soft);border-color:var(--teal);color:var(--teal);}
@@ -611,6 +610,14 @@
   }
   .list-table .lt-group td span{font-family:'IBM Plex Mono', monospace;font-weight:500;font-size:11px;color:rgba(255,255,255,0.7);margin-left:8px;letter-spacing:0;}
   .lt-next{white-space:nowrap;}
+
+  .weekly-view{margin-top:4px;}
+  /* The weekly closing fragment carries its own inline (email-safe) colours,
+     so it stays on a white sheet in both themes. */
+  .wc-paper{background:#fff;color:#203764;border:1px solid var(--navy-line);border-radius:12px;padding:14px;overflow-x:auto;font-family:Calibri,'Segoe UI',Arial,sans-serif;}
+  .wc-paper .v.off{display:none;}
+  .wc-paper .v.hit{outline:2px solid #F2C200;}
+  .wc-foot{font-size:12px;color:#667085;margin:10px 0 0;}
 
   .changes-view{margin-top:4px;}
   .ch-controls{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;justify-content:space-between;margin-bottom:14px;}
@@ -882,10 +889,10 @@
       <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4v16"/><path d="M3 8l4-4 4 4"/><path d="M17 20V4"/><path d="M13 16l4 4 4-4"/></svg>
       Changes
     </button>
-    <a class="view-btn" id="weeklyClosingLink" href="weekly-closing.html" target="_blank" rel="noopener" title="Weekly schedule &amp; closing time (opens in a new tab)">
+    <button class="view-btn" id="viewBtnWeekly" type="button">
       <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
       Weekly closing
-    </a>
+    </button>
     <select class="service-select" id="serviceSelect" aria-label="Filter by service">
       <option value="all">All services</option>
     </select>
@@ -960,6 +967,20 @@
       <div class="bt-scroll" id="btScroll"></div>
     </div>
     <div class="bt-foot">Each wharf row is a terminal with several berths. Bars stack into extra lanes when vessels are alongside at the same terminal at once, or when a short call's name needs the room — not a clash. Short calls are lengthened so the name fits inside the bar; the dashed tick marks the real ETD and the ETB→ETD times on the bar are exact. Hover a bar for details, click it to open that vessel's schedule.</div>
+  </div>
+
+  <div class="weekly-view" id="weeklyView" style="display:none;">
+    <div class="ch-controls">
+      <div class="chip-row" id="wcPortFilter">
+        <div class="chip active" data-port="all">ALL</div>
+        <div class="chip chip-bkk" data-port="bkk">THBKK</div>
+        <div class="chip chip-lch" data-port="lch">THLCH</div>
+      </div>
+      <span class="ch-base"><span id="wcCount"></span>
+        <button class="view-btn" id="wcCopy" type="button" title="Copy the calendar as formatted text to paste into an email">Copy for email</button>
+      </span>
+    </div>
+    <div class="wc-paper" id="wcBody">__WEEKLY_CLOSING_HTML__</div>
   </div>
 
   <div class="changes-view" id="changesView" style="display:none;">
@@ -1514,6 +1535,7 @@ function initServiceSelect(){
     if(currentView === 'summary') renderSummary();
     if(currentView === 'berth') renderBerth();
     if(currentView === 'changes') renderChanges();
+    if(currentView === 'weekly') renderWeekly();
   });
 }
 
@@ -1615,6 +1637,7 @@ document.getElementById('searchInput').addEventListener('input', e=>{
   if(currentView==='summary') renderSummary();
   if(currentView==='berth') renderBerth();
   if(currentView==='changes') renderChanges();
+  if(currentView==='weekly') renderWeekly();
 });
 document.getElementById('searchClear').addEventListener('click', ()=>{
   const input = document.getElementById('searchInput');
@@ -1628,6 +1651,7 @@ document.getElementById('searchClear').addEventListener('click', ()=>{
   if(currentView==='summary') renderSummary();
   if(currentView==='berth') renderBerth();
   if(currentView==='changes') renderChanges();
+  if(currentView==='weekly') renderWeekly();
 });
 document.getElementById('sortSelect').addEventListener('change', e=>{
   currentSort = e.target.value;
@@ -2030,6 +2054,56 @@ function renderChanges(){
   initLegMaps();
 }
 let expandedChangeKey = null;
+
+// ---------- Weekly closing (calendar fragment built by weekly_closing.py) ----------
+// Cards carry data-k = "service code voyage name port"; filter by toggling
+// .off, the same way the standalone weekly closing page does.
+let weeklyPort = 'all';
+function renderWeekly(){
+  const words = currentQuery.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  const svc = currentService.toLowerCase();
+  let n = 0, tot = 0;
+  document.querySelectorAll('#wcBody .v').forEach(v => {
+    tot++;
+    const k = v.dataset.k, toks = k.split(' ');
+    const ok = words.every(w => k.includes(w)) && (weeklyPort === 'all' || toks.includes(weeklyPort))
+      && (currentService === 'all' || toks[0] === svc);
+    v.classList.toggle('off', !ok);
+    v.classList.toggle('hit', ok && words.length > 0);
+    if(ok) n++;
+  });
+  document.getElementById('wcCount').textContent = n === tot ? `${tot} calls` : `${n} / ${tot} calls`;
+}
+document.querySelectorAll('#wcPortFilter .chip').forEach(chip => chip.addEventListener('click', () => {
+  document.querySelectorAll('#wcPortFilter .chip').forEach(c => c.classList.remove('active'));
+  chip.classList.add('active');
+  weeklyPort = chip.dataset.port;
+  renderWeekly();
+}));
+// Copies what's shown (filtered-out cards dropped) as rich text for Outlook.
+document.getElementById('wcCopy').addEventListener('click', async () => {
+  const btn = document.getElementById('wcCopy');
+  const clone = document.getElementById('wcBody').cloneNode(true);
+  clone.querySelectorAll('.v.off').forEach(v => v.remove());
+  clone.querySelectorAll('.v.hit').forEach(v => v.classList.remove('hit'));
+  const html = clone.innerHTML;
+  try {
+    await navigator.clipboard.write([new ClipboardItem({
+      'text/html': new Blob([html], {type:'text/html'}),
+      'text/plain': new Blob([clone.innerText], {type:'text/plain'}),
+    })]);
+  } catch(e) {
+    const tmp = document.createElement('div');
+    tmp.style.cssText = 'position:fixed;left:-99999px;top:0';
+    tmp.innerHTML = html;
+    document.body.appendChild(tmp);
+    const range = document.createRange(); range.selectNodeContents(tmp);
+    const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range);
+    document.execCommand('copy'); sel.removeAllRanges(); tmp.remove();
+  }
+  btn.textContent = 'Copied ✓';
+  setTimeout(() => { btn.textContent = 'Copy for email'; }, 1800);
+});
 document.querySelectorAll('#chPortFilter .chip').forEach(chip => chip.addEventListener('click', () => {
   document.querySelectorAll('#chPortFilter .chip').forEach(c => c.classList.remove('active'));
   chip.classList.add('active');
@@ -2269,6 +2343,7 @@ function setView(v){
   document.getElementById('viewBtnSummary').classList.toggle('active', v==='summary');
   document.getElementById('viewBtnBerth').classList.toggle('active', v==='berth');
   document.getElementById('viewBtnChanges').classList.toggle('active', v==='changes');
+  document.getElementById('viewBtnWeekly').classList.toggle('active', v==='weekly');
   document.getElementById('statusChips').style.display = v==='list' ? '' : 'none';
   document.getElementById('metaRow').style.display = v==='list' ? '' : 'none';
   document.getElementById('cardGrid').style.display = v==='list' ? '' : 'none';
@@ -2276,6 +2351,7 @@ function setView(v){
   document.getElementById('summaryView').style.display = v==='summary' ? 'block' : 'none';
   document.getElementById('berthView').style.display = v==='berth' ? 'block' : 'none';
   document.getElementById('changesView').style.display = v==='changes' ? 'block' : 'none';
+  document.getElementById('weeklyView').style.display = v==='weekly' ? 'block' : 'none';
   if(v==='list'){
     document.getElementById('emptyState').style.display = lastRenderedList.length===0 ? 'block' : 'none';
   } else {
@@ -2284,6 +2360,7 @@ function setView(v){
     if(v==='summary') renderSummary();
     if(v==='berth') renderBerth();
     if(v==='changes') renderChanges();
+    if(v==='weekly') renderWeekly();
   }
   initLegMaps();
 }
@@ -2292,6 +2369,7 @@ document.getElementById('viewBtnCalendar').addEventListener('click', () => setVi
 document.getElementById('viewBtnSummary').addEventListener('click', () => setView('summary'));
 document.getElementById('viewBtnBerth').addEventListener('click', () => setView('berth'));
 document.getElementById('viewBtnChanges').addEventListener('click', () => setView('changes'));
+document.getElementById('viewBtnWeekly').addEventListener('click', () => setView('weekly'));
 
 // ---------- Theme (light / dark) ----------
 const ICON_MOON = `<svg viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>`;
